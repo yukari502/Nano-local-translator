@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Nano local translator</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="header-row">
+      <h2 data-i18n="appTitle">AI Web Translator</h2>
+      <div class="header-controls" style="display: flex; align-items: center; gap: 8px;">
+        <label class="switch" title="Enable/Disable Extension">
+          <input type="checkbox" id="masterSwitch" checked>
+          <span class="slider round"></span>
+        </label>
+        <button id="btnSettings" class="icon-btn" title="Settings">⚙️</button>
+      </div>
+    </div>
+
+    <!-- ════ Translate Tab ════ -->
+    <div id="translateTab" class="tab-pane">
+      <div id="apiStatus" class="status-bar">Checking API availability...</div>
+
+      <div class="section">
+        <div class="row">
+          <div class="field">
+            <label data-i18n="sourceLang">Source Language</label>
+            <select id="sourceLang"></select>
+          </div>
+          <div class="field">
+            <label data-i18n="targetLang">Target Language</label>
+            <select id="targetLang"></select>
+          </div>
+        </div>
+
+        <div class="field mode-group">
+          <label data-i18n="displayMode">Display Mode</label>
+          <div class="mode-btns">
+            <button id="modeTranslate" class="mode-btn active" data-i18n="translateOnly">Translate Only</button>
+            <button id="modeBilingual" class="mode-btn" data-i18n="bilingual">Bilingual</button>
+          </div>
+        </div>
+
+        <div class="field mode-group" style="margin-top: 10px;">
+          <label data-i18n="selectToTranslateTitle">Select-to-Translate</label>
+          <div class="s2t-container">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 13px;" data-i18n="s2tTranslate">Translation</span>
+              <label class="switch">
+                <input type="checkbox" id="s2tTranslateSwitch" checked>
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button id="translateBtn" class="btn-primary" data-i18n="translateBtn">Translate Page</button>
+        <button id="restoreBtn" class="btn-secondary" disabled data-i18n="restoreBtn">Restore Original</button>
+      </div>
+
+      <div class="tips shortcut-box">
+        <div class="shortcut-title" data-i18n="shortcutTip">Shortcut: Alt+T (Mac: ⌥+T) to toggle translation.</div>
+        <span data-i18n="shortcutChange">To change, visit</span>
+        <a href="#" class="chrome-link" data-url="chrome://extensions/shortcuts">chrome://extensions/shortcuts</a>
+      </div>
+
+      <div id="statusMsg" class="status-msg" style="display:none"></div>
+
+      <div class="section info-section">
+        <div class="info-row">
+          <span class="info-label" data-i18n="pageStatus">Page status:</span>
+          <span id="pageStatus">Ready</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label" data-i18n="translatedNodes">Translated:</span>
+          <span id="translatedCount">0</span>
+          <span> nodes</span>
+        </div>
+      </div>
+
+      <div class="tips" style="margin-top: 10px; font-size: 12px; text-align: center;">
+        <a href="#" class="chrome-link" data-url="chrome://on-device-translation-internals" style="color: #1a73e8; text-decoration: underline;">
+          To manage language packs, visit chrome://on-device-translation-internals
+        </a>
+      </div>
+
+      <div class="stats-section">
+        You have translated <strong id="totalTranslateCount">0</strong> times!
+      </div>
+      
+      <div class="open-source-notice">
+        <span data-i18n="openSourceNotice">This is an open-source project.</span>
+        <a href="https://github.com/yukari502/Nano-local-translator" target="_blank" class="github-link">
+          <svg height="14" viewBox="0 0 16 16" version="1.1" width="14" aria-hidden="true" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+          GitHub <span>⭐</span>
+        </a>
+      </div>
+
+      <div class="coffee-section">
+        <label class="section-label" style="text-align: center; display: block; margin-bottom: 8px;" data-i18n="supportDev">If you find this project helpful, you can Buy Me a Coffee.</label>
+        <a href="https://buymeacoffee.com/YamadaSensei" target="_blank" class="coffee-link">
+          <img src="../img/qr-code.png" alt="Buy me a coffee" class="qr-code">
+          <span class="coffee-text" data-i18n="buyCoffee">Buy me a coffee ☕</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ════ Settings Tab ════ -->
+    <div id="settingsTab" class="tab-pane" style="display:none">
+      <div class="section">
+        <label class="section-label" data-i18n="pluginSettings">Plugin Settings</label>
+        
+        <div class="field">
+          <label data-i18n="uiLanguage">UI Language</label>
+          <select id="uiLangSelect" class="ui-lang-select" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd;">
+            <option value="en">English (ENG)</option>
+            <option value="zh">简体中文 (CHS)</option>
+            <option value="zh-Hant">繁體中文 (CHT)</option>
+            <option value="ja">日本語 (JP)</option>
+            <option value="es">Español (ES)</option>
+            <option value="fr">Français (FR)</option>
+            <option value="de">Deutsch (DE)</option>
+            <option value="ru">Русский (RU)</option>
+            <option value="ar">العربية (AR)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label data-i18n="fullPageShortcut">Full Page Translation</label>
+          <a href="#" class="btn-secondary chrome-link" data-url="chrome://extensions/shortcuts" style="text-align: center; text-decoration: none; display: inline-block; width: auto;" data-i18n="editShortcuts">Edit (Alt+T)</a>
+        </div>
+
+        <div class="field">
+          <div class="field-label-with-info">
+            <label data-i18n="cacheResults">Cache Translation Results</label>
+            <div class="info-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+              <div class="info-tooltip" data-i18n="cacheTooltip">
+                Enabling cache can improve translation speed and reduce duplicate requests, but may result in translations not being the most up-to-date.
+              </div>
+            </div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="useCacheSwitch" checked>
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="section" style="margin-top: 10px;">
+        <label class="section-label" data-i18n="ttsSettings">TTS Settings</label>
+        
+        <div class="field">
+          <label data-i18n="ttsVoice">Voice</label>
+          <select id="ttsVoiceSelect" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd;"></select>
+        </div>
+
+        <div class="field">
+          <label><span data-i18n="ttsRate">Speed</span> (<span id="ttsRateVal">1.0</span>)</label>
+          <input type="range" id="ttsRate" min="0.5" max="3.0" step="0.1" value="1.0">
+        </div>
+
+        <div class="field">
+          <label><span data-i18n="ttsPitch">Pitch</span> (<span id="ttsPitchVal">1.0</span>)</label>
+          <input type="range" id="ttsPitch" min="0.5" max="2.0" step="0.1" value="1.0">
+        </div>
+
+        <div class="field">
+          <label><span data-i18n="ttsVolume">Volume</span> (<span id="ttsVolumeVal">1.0</span>)</label>
+          <input type="range" id="ttsVolume" min="0.0" max="1.0" step="0.1" value="1.0">
+        </div>
+      </div>
+
+      <div class="action-bar" style="margin-top: 15px;">
+        <button id="saveSettingsBtn" class="btn-primary" data-i18n="saveSettingsBtn">Save Settings</button>
+        <button id="backBtn" class="btn-secondary" data-i18n="backBtn">Back</button>
+      </div>
+      <div id="settingsStatusMsg" class="status-msg" style="display:none; margin-top: 8px;"></div>
+
+      <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+
+      <div class="coffee-section">
+        <label class="section-label" style="text-align: center; display: block; margin-bottom: 8px;" data-i18n="supportDev">If you find this project helpful, you can Buy Me a Coffee.</label>
+        <a href="https://buymeacoffee.com/YamadaSensei" target="_blank" class="coffee-link">
+          <img src="../img/qr-code.png" alt="Buy me a coffee" class="qr-code">
+          <span class="coffee-text" data-i18n="buyCoffee">Buy me a coffee ☕</span>
+        </a>
+      </div>
+
+    <!-- Welcome Modal -->
+    <div id="welcomeModal" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+        <h3 data-i18n="welcomeTitle" style="margin-top: 0; margin-bottom: 12px; color: #1a73e8;">Welcome!</h3>
+        <p style="line-height: 1.5; font-size: 13px; margin: 0 0 12px 0;">
+          <span data-i18n="welcomeP1">This is an open-source, fast translator based on Chrome Built-in AI.</span><br><br>
+          <span data-i18n="welcomeP2">All translations are processed locally on your device for complete privacy.</span><br><br>
+          <strong style="color:#d93025;" data-i18n="welcomeImportant">Important:</strong> <span data-i18n="welcomeP3">First-time use requires downloading translation packs. The first translation may be slightly slow.</span>
+        </p>
+        <div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 15px;">
+          <button id="welcomeNeverShow" class="btn-primary" data-i18n="welcomeNeverShow" style="flex: auto;">Close & Never Show Again</button>
+          <button id="welcomeClose" class="btn-secondary" data-i18n="welcomeClose" style="flex: 0 0 auto;">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+
+</html>
