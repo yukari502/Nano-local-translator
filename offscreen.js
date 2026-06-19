@@ -34,7 +34,7 @@ async function initTesseract(sourceLang) {
   const options = {
     workerPath: workerPath,
     corePath: corePath,
-    langPath: 'https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata@4.0.0', // High quality models
+    langPath: 'https://tessdata.projectnaptha.com/4.0.0', // High quality models
     gzip: true,
     workerBlobURL: false,
     logger: m => {
