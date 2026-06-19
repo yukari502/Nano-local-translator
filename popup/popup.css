@@ -150,6 +150,38 @@ input:checked + .slider:before {
   text-transform: uppercase;
   letter-spacing: 0.6px;
   margin-bottom: 2px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+
+.section-label::after {
+  content: "▼";
+  font-size: 10px;
+  transition: transform 0.3s ease;
+  color: #888;
+}
+
+.section.collapsed .section-label::after {
+  transform: rotate(-90deg);
+}
+
+.section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  max-height: 800px;
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.3s ease-in-out;
+  opacity: 1;
+}
+
+.section.collapsed .section-content {
+  max-height: 0;
+  opacity: 0;
+  margin-top: -6px; /* pull up when collapsed */
 }
 
 .row {

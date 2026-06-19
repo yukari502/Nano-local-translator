@@ -26,7 +26,7 @@ const I18N = {
     shortcutTip: "Shortcut: Alt+T (Mac: ⌥+T) to toggle.", shortcutChange: "To change, visit",
     selectToTranslateTitle: "Select/Hover Translation", selectToTranslateLabel: "Status",
     s2tTranslate: "Select Translation", hoverTranslate: "Hover Translation", youtubeDualSubs: "YouTube Dual Subs", s2tSpeak: "Speak Aloud (TTS)",
-    optionalFeaturesTitle: "Optional Features", ocrTranslateTitle: "Screenshot OCR (Alt+S)", closeAllOcrBtn: "Close All Popups", ocrAutoClose: "Auto-close (10s)",
+    optionalFeaturesTitle: "Optional Features", ocrTranslateTitle: "Screenshot Translate (Alt+S)", closeAllOcrBtn: "Close All Popups", ocrAutoClose: "Auto-close (s)",
     youtubeSettingsTitle: "YouTube dual subs settings", ytSubColorMode: "Color Mode", ytSubColorCustom: "Custom", ytSubColorInherit: "Original", ytSubColor: "Custom Color", ytSubOpacity: "Opacity", ytSubPosition: "Position (Translation)", ytSubBelow: "Below Original", ytSubAbove: "Above Original",
     statusOff: "Off", statusOn: "On", shortcutSettings: "Shortcuts",
     fullPageShortcut: "Full Page Translation", editShortcuts: "Edit (Alt+T)",
@@ -56,7 +56,7 @@ const I18N = {
     shortcutTip: "快捷键：Alt+T (Mac: ⌥+T) 切换翻译", shortcutChange: "修改快捷键请访问",
     selectToTranslateTitle: "划词/悬停翻译", selectToTranslateLabel: "状态",
     s2tTranslate: "划词翻译", hoverTranslate: "悬停选词翻译", youtubeDualSubs: "YouTube双语字幕", s2tSpeak: "划词朗读 (TTS)",
-    optionalFeaturesTitle: "可选功能", ocrTranslateTitle: "截图 OCR 翻译 (Alt+S)", closeAllOcrBtn: "关闭所有弹窗", ocrAutoClose: "自动关闭 (10秒)",
+    optionalFeaturesTitle: "可选功能", ocrTranslateTitle: "截屏翻译 (Alt+S)", closeAllOcrBtn: "关闭所有弹窗", ocrAutoClose: "自动关闭 (秒)",
     youtubeSettingsTitle: "YouTube 双语字幕设置", ytSubColorMode: "颜色模式", ytSubColorCustom: "自定义", ytSubColorInherit: "跟随原文", ytSubColor: "自定义颜色", ytSubOpacity: "透明度", ytSubPosition: "翻译位置", ytSubBelow: "在原文下方", ytSubAbove: "在原文上方",
     statusOff: "关闭", statusOn: "开启", shortcutSettings: "快捷键设置",
     fullPageShortcut: "全文翻译快捷键", editShortcuts: "编辑 (Alt+T)",
@@ -86,7 +86,7 @@ const I18N = {
     shortcutTip: "快捷鍵：Alt+T (Mac: ⌥+T) 切換翻譯", shortcutChange: "修改快捷鍵請訪問",
     selectToTranslateTitle: "劃詞/懸停翻譯", selectToTranslateLabel: "狀態",
     s2tTranslate: "劃詞翻譯", hoverTranslate: "懸停選詞翻譯", youtubeDualSubs: "YouTube雙語字幕", s2tSpeak: "劃詞朗讀 (TTS)",
-    optionalFeaturesTitle: "可選功能", ocrTranslateTitle: "截圖 OCR 翻譯 (Alt+S)", closeAllOcrBtn: "關閉所有彈窗", ocrAutoClose: "自動關閉 (10秒)",
+    optionalFeaturesTitle: "可選功能", ocrTranslateTitle: "截屏翻譯 (Alt+S)", closeAllOcrBtn: "關閉所有彈窗", ocrAutoClose: "自動關閉 (秒)",
     youtubeSettingsTitle: "YouTube 雙語字幕設置", ytSubColorMode: "顏色模式", ytSubColorCustom: "自定義", ytSubColorInherit: "跟隨原文", ytSubColor: "自定義顏色", ytSubOpacity: "透明度", ytSubPosition: "翻譯位置", ytSubBelow: "在原文下方", ytSubAbove: "在原文上方",
     statusOff: "關閉", statusOn: "開啟", shortcutSettings: "快捷鍵設置",
     fullPageShortcut: "全文翻譯快捷鍵", editShortcuts: "編輯 (Alt+T)",
@@ -313,7 +313,7 @@ const hoverTranslateSwitch = $('hoverTranslateSwitch');
 const youtubeDualSubsSwitch = $('youtubeDualSubsSwitch');
 const ocrTranslateSwitch = $('ocrTranslateSwitch');
 const ocrAutoCloseSwitch = $('ocrAutoCloseSwitch');
-const ocrSettingsContainer = $('ocrSettingsContainer');
+const ocrAutoCloseTime = $('ocrAutoCloseTime');
 const closeAllOcrBtn = $('closeAllOcrBtn');
 
 const ytSubColorMode = $('ytSubColorMode');
@@ -325,9 +325,9 @@ const ytSubPosition = $('ytSubPosition');
 
 // TTS elements
 const ttsVoiceSelect = $('ttsVoiceSelect');
-const ttsRate = $('ttsRate');
-const ttsPitch = $('ttsPitch');
-const ttsVolume = $('ttsVolume');
+const ttsRate = $('ttsRateSlider');
+const ttsPitch = $('ttsPitchSlider');
+const ttsVolume = $('ttsVolumeSlider');
 const ttsRateVal = $('ttsRateVal');
 const ttsPitchVal = $('ttsPitchVal');
 const ttsVolumeVal = $('ttsVolumeVal');
@@ -399,10 +399,19 @@ async function init() {
     switchTab(isSettings ? 'translate' : 'settings');
   });
 
+  document.querySelectorAll('.section-label').forEach(label => {
+    label.addEventListener('click', () => {
+      const section = label.closest('.section');
+      if (section && section.querySelector('.section-content')) {
+        section.classList.toggle('collapsed');
+      }
+    });
+  });
+
   await checkTranslatorApi();
   const saved = await chrome.storage.local.get([
     'isEnabled', 'uiLang', 'sourceLang', 'targetLang', 'mode', 
-    's2tTranslate', 'hoverTranslate', 'youtubeDualSubs', 'ocrTranslate', 'ocrAutoClose', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition', 'useCache', 'totalTranslates', 'hideWelcome', 'selectToTranslate',
+    's2tTranslate', 'hoverTranslate', 'youtubeDualSubs', 'ocrTranslate', 'ocrAutoClose', 'ocrAutoCloseTime', 'ocrFontColor', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition', 'useCache', 'totalTranslates', 'hideWelcome', 'selectToTranslate',
     'ttsVoice', 'ttsRate', 'ttsPitch', 'ttsVolume'
   ]);
   
@@ -445,7 +454,10 @@ async function init() {
   const ocrBilingualSwitch = $('ocrBilingualSwitch');
   if (ocrBilingualSwitch) ocrBilingualSwitch.checked = (saved.ocrBilingual !== 'off'); // default on
   if (ocrAutoCloseSwitch) ocrAutoCloseSwitch.checked = (saved.ocrAutoClose === 'on');
-  if (ocrSettingsContainer) ocrSettingsContainer.style.display = (saved.ocrTranslate === 'on') ? 'flex' : 'none';
+  if (ocrAutoCloseTime && saved.ocrAutoCloseTime !== undefined) ocrAutoCloseTime.value = saved.ocrAutoCloseTime;
+  
+  const ocrFontColor = $('ocrFontColor');
+  if (ocrFontColor && saved.ocrFontColor !== undefined) ocrFontColor.value = saved.ocrFontColor;
   
   const ocrOpacitySlider = $('ocrOpacitySlider');
   const ocrOpacityVal = $('ocrOpacityVal');
@@ -537,7 +549,6 @@ async function init() {
     ocrTranslateSwitch.addEventListener('change', async (e) => {
       const val = e.target.checked ? 'on' : 'off';
       await chrome.storage.local.set({ ocrTranslate: val });
-      if (ocrSettingsContainer) ocrSettingsContainer.style.display = e.target.checked ? 'flex' : 'none';
       setTimeout(() => sortFeatures(true), 500);
     });
   }
@@ -555,11 +566,27 @@ async function init() {
       await chrome.storage.local.set({ ocrAutoClose: val });
     });
   }
+
+  if (ocrAutoCloseTime) {
+    ocrAutoCloseTime.addEventListener('input', async (e) => {
+      await chrome.storage.local.set({ ocrAutoCloseTime: e.target.value });
+    });
+  }
+  
+  if (ocrFontColor) {
+    ocrFontColor.addEventListener('input', async (e) => {
+      await chrome.storage.local.set({ ocrFontColor: e.target.value });
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { action: "update_ocr_font_color", color: e.target.value });
+    });
+  }
   
   if (ocrOpacitySlider) {
     ocrOpacitySlider.addEventListener('input', async (e) => {
       if (ocrOpacityVal) ocrOpacityVal.textContent = e.target.value;
       await chrome.storage.local.set({ ocrOpacity: e.target.value });
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { action: "update_ocr_opacity", opacity: e.target.value });
     });
   }
   
@@ -572,12 +599,7 @@ async function init() {
     });
   }
 
-  const testOcrBtn = $('testOcrBtn');
-  if (testOcrBtn) {
-    testOcrBtn.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ action: 'test_capture' });
-    });
-  }
+
 
   ytSubColorMode.addEventListener('change', async (e) => {
     ytSubColorField.style.display = e.target.value === 'inherit' ? 'none' : 'flex';

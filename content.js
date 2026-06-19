@@ -1045,10 +1045,11 @@ function processOcrCrop(dataUrl, x, y, w, h) {
   const popupX = cx;
   const popupY = Math.max(10, cy - 150); // Shift up a bit, ensure it stays on screen
 
-  chrome.storage.local.get(['ocrOpacity', 'ocrBilingual'], (data) => {
+  chrome.storage.local.get(['ocrOpacity', 'ocrBilingual', 'ocrFontColor'], (data) => {
     const opacity = data.ocrOpacity || '1';
     const isBilingual = data.ocrBilingual !== 'off';
-    const popup = createOcrPopup(popupX, popupY, opacity, isBilingual);
+    const fontColor = data.ocrFontColor || '#ffffff';
+    const popup = createOcrPopup(popupX, popupY, opacity, isBilingual, fontColor);
     popup.setContent('Loading OCR & Translation...', '');
     
     const img = new Image();
@@ -1080,96 +1081,78 @@ function processOcrCrop(dataUrl, x, y, w, h) {
   }); // Close chrome.storage.local.get callback
 }
 
-function createOcrPopup(x, y, initialOpacity = '1') {
+function createOcrPopup(x, y, initialOpacity = '1', isBilingual = true, fontColor = '#ffffff') {
   const popup = document.createElement('div');
   popup.className = 'ai-ocr-popup';
   Object.assign(popup.style, {
-    position: 'fixed', left: Math.min(x, window.innerWidth - 300) + 'px', top: Math.min(y, window.innerHeight - 200) + 'px',
-    width: '300px', backgroundColor: 'var(--ai-ocr-bg, #fff)', border: '1px solid var(--ai-ocr-border, #ccc)', borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: '2147483647', display: 'flex', flexDirection: 'column',
-    fontFamily: 'sans-serif', color: 'var(--ai-ocr-color, #333)', overflow: 'auto', opacity: initialOpacity, resize: 'both',
-    minWidth: '200px', minHeight: '100px'
+    position: 'fixed',
+    left: Math.min(x, window.innerWidth - 300) + 'px',
+    top: Math.min(y, window.innerHeight - 200) + 'px',
+    width: '300px',
+    minWidth: '150px',
+    minHeight: '60px',
+    backgroundColor: 'rgba(75, 75, 75, 0.95)',
+    borderRadius: '4px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+    zIndex: '2147483647',
+    display: 'flex',
+    flexDirection: 'column',
+    fontFamily: 'sans-serif',
+    color: fontColor,
+    opacity: initialOpacity,
+    padding: '16px',
+    textAlign: 'center',
+    resize: 'both',
+    overflow: 'auto',
+    boxSizing: 'border-box'
   });
 
-  // Header (Draggable)
-  const header = document.createElement('div');
-  Object.assign(header.style, {
-    padding: '8px', backgroundColor: 'var(--ai-ocr-header-bg, #f1f3f4)', borderBottom: '1px solid var(--ai-ocr-border, #ddd)', display: 'flex',
-    justifyContent: 'space-between', alignItems: 'center', cursor: 'move', userSelect: 'none'
-  });
-  
-  const title = document.createElement('span');
-  title.textContent = 'OCR Translate';
-  title.style.fontSize = '12px';
-  title.style.fontWeight = 'bold';
-  
-  const controls = document.createElement('div');
-  controls.style.display = 'flex';
-  controls.style.alignItems = 'center';
-  controls.style.gap = '8px';
-  
+
+
   const closeBtn = document.createElement('span');
   closeBtn.textContent = '✕';
-  closeBtn.style.cursor = 'pointer';
-  closeBtn.style.fontSize = '14px';
+  Object.assign(closeBtn.style, {
+    position: 'absolute',
+    top: '6px',
+    right: '8px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    color: '#ccc',
+    userSelect: 'none'
+  });
+  closeBtn.onmouseover = () => closeBtn.style.color = '#fff';
+  closeBtn.onmouseout = () => closeBtn.style.color = '#ccc';
   closeBtn.onclick = () => popup.remove();
-  
-  controls.appendChild(closeBtn);
-  header.appendChild(title);
-  header.appendChild(controls);
-  
-  // Content Area
+  popup.appendChild(closeBtn);
+
   const contentArea = document.createElement('div');
   Object.assign(contentArea.style, {
-    padding: '10px', fontSize: '13px', lineHeight: '1.5', maxHeight: '300px', overflowY: 'auto'
+    fontSize: '14px',
+    lineHeight: '1.4',
+    flex: '1',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center'
   });
   
   const origDiv = document.createElement('div');
   origDiv.style.marginBottom = '8px';
-  origDiv.style.color = 'var(--ai-ocr-orig-color, #555)';
+  origDiv.style.color = fontColor;
+  origDiv.style.opacity = '0.7';
+  origDiv.style.fontSize = '12px';
   
   const transDiv = document.createElement('div');
-  transDiv.style.fontWeight = '500';
-  transDiv.style.color = 'var(--ai-ocr-trans-color, #1a73e8)';
-  
-  // Audio Controls
-  const audioControls = document.createElement('div');
-  Object.assign(audioControls.style, {
-    padding: '8px 10px', borderTop: '1px solid var(--ai-ocr-divider, #eee)', display: 'flex', gap: '10px', backgroundColor: 'var(--ai-ocr-footer-bg, #fafafa)'
-  });
-  
-  let origTextForTTS = '';
-  const origSpeaker = document.createElement('span');
-  origSpeaker.textContent = '🔊 Orig';
-  origSpeaker.style.cursor = 'pointer';
-  origSpeaker.style.fontSize = '12px';
-  origSpeaker.onclick = () => {
-    if(origTextForTTS) chrome.runtime.sendMessage({ type: 'speak', text: origTextForTTS, lang: 'en' });
-  };
-  
-  const transSpeaker = document.createElement('span');
-  transSpeaker.textContent = '🔊 Trans';
-  transSpeaker.style.cursor = 'pointer';
-  transSpeaker.style.fontSize = '12px';
-  transSpeaker.onclick = () => {
-    if(transDiv.textContent) chrome.runtime.sendMessage({ type: 'speak', text: transDiv.textContent, lang: 'zh' });
-  };
-  
-  audioControls.appendChild(origSpeaker);
-  audioControls.appendChild(transSpeaker);
+  transDiv.style.fontWeight = '400';
+  transDiv.style.color = fontColor;
 
   contentArea.appendChild(origDiv);
   contentArea.appendChild(transDiv);
-  
-  popup.appendChild(header);
   popup.appendChild(contentArea);
-  popup.appendChild(audioControls);
   document.body.appendChild(popup);
   
-  // Drag logic
   let isDragging = false;
   let dragStartX, dragStartY, initialLeft, initialTop;
-  header.onmousedown = (e) => {
+  popup.onmousedown = (e) => {
     if (e.target === closeBtn) return;
     isDragging = true;
     dragStartX = e.clientX;
@@ -1190,22 +1173,38 @@ function createOcrPopup(x, y, initialOpacity = '1') {
     document.removeEventListener('mouseup', stopDrag);
   };
 
-  chrome.storage.local.get(['ocrAutoClose'], (res) => {
-    if (res.ocrAutoClose) {
-      setTimeout(() => { if (document.body.contains(popup)) popup.remove(); }, 10000);
+  chrome.storage.local.get(['ocrAutoClose', 'ocrAutoCloseTime'], (res) => {
+    if (res.ocrAutoClose === 'on') {
+      const timeMs = (parseInt(res.ocrAutoCloseTime) || 10) * 1000;
+      setTimeout(() => { if (document.body.contains(popup)) popup.remove(); }, timeMs);
     }
   });
-
 
   return {
     setContent: (orig, trans) => {
       origDiv.textContent = orig;
       origDiv.style.display = orig ? 'block' : 'none';
       transDiv.textContent = trans;
-      origSpeaker.style.display = orig ? 'inline' : 'none';
     },
-    setOriginalText: (text) => {
-      origTextForTTS = text;
-    }
+    setOriginalText: (text) => {}
   };
 }
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'update_ocr_opacity') {
+    document.querySelectorAll('.ai-ocr-popup').forEach(p => {
+      p.style.opacity = request.opacity;
+    });
+    if (sendResponse) sendResponse({ ok: true });
+    return true;
+  }
+  if (request.action === 'update_ocr_font_color') {
+    document.querySelectorAll('.ai-ocr-popup').forEach(p => {
+      p.style.color = request.color;
+      const divs = p.querySelectorAll('div > div');
+      divs.forEach(d => { d.style.color = request.color; });
+    });
+    if (sendResponse) sendResponse({ ok: true });
+    return true;
+  }
+});

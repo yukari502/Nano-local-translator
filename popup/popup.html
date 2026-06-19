@@ -51,6 +51,12 @@
         <button id="restoreBtn" class="btn-secondary" disabled data-i18n="restoreBtn">Restore Original</button>
       </div>
 
+      <div class="tips shortcut-box" style="margin-top: 10px; margin-bottom: 5px;">
+        <div class="shortcut-title" data-i18n="shortcutTip">Shortcut: Alt+T (Mac: ⌥+T) to toggle translation.</div>
+        <span data-i18n="shortcutChange">To change, visit</span>
+        <a href="#" class="chrome-link" data-url="chrome://extensions/shortcuts">chrome://extensions/shortcuts</a>
+      </div>
+
       <div class="field mode-group" style="margin-top: 10px;">
         <label data-i18n="optionalFeaturesTitle">Optional Features</label>
         <div class="s2t-container" style="display: flex; flex-direction: column; gap: 8px; position: relative;">
@@ -79,47 +85,15 @@
             </label>
           </div>
 
-          <div class="feature-item" id="item-ocrTranslate" style="display: flex; flex-direction: column; padding: 4px 0; transition: transform 0.3s ease;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 13px;" data-i18n="ocrTranslateTitle">Screenshot OCR (Alt+S)</span>
-                <button id="testOcrBtn" class="btn-primary" style="padding: 2px 6px; font-size: 10px; min-width: auto; height: auto;">Test</button>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="ocrTranslateSwitch">
-                <span class="slider round"></span>
-              </label>
-            </div>
-            <div id="ocrSettingsContainer" style="display: none; flex-direction: column; gap: 8px; margin-top: 8px; padding-left: 10px; border-left: 2px solid #ddd;">
-              <button id="closeAllOcrBtn" class="btn-secondary" style="font-size: 12px; padding: 4px;" data-i18n="closeAllOcrBtn">Close All Popups</button>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 12px;" data-i18n="ocrBilingual">Bilingual Translation</span>
-                <label class="switch" style="transform: scale(0.8);">
-                  <input type="checkbox" id="ocrBilingualSwitch" checked>
-                  <span class="slider round"></span>
-                </label>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 12px;" data-i18n="ocrAutoClose">Auto-close (10s)</span>
-                <label class="switch" style="transform: scale(0.8);">
-                  <input type="checkbox" id="ocrAutoCloseSwitch">
-                  <span class="slider round"></span>
-                </label>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label style="font-size: 12px; margin: 0;"><span data-i18n="ocrOpacity">Popup Opacity</span> (<span id="ocrOpacityVal">1.0</span>)</label>
-                <input type="range" id="ocrOpacitySlider" min="0.2" max="1" step="0.1" value="1" style="width: 80px;">
-              </div>
-            </div>
+          <div class="feature-item" id="item-ocrTranslate" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; transition: transform 0.3s ease;">
+            <span style="font-size: 13px;" data-i18n="ocrTranslateTitle">Screenshot OCR (Alt+S)</span>
+            <label class="switch">
+              <input type="checkbox" id="ocrTranslateSwitch">
+              <span class="slider round"></span>
+            </label>
           </div>
 
         </div>
-      </div>
-
-      <div class="tips shortcut-box">
-        <div class="shortcut-title" data-i18n="shortcutTip">Shortcut: Alt+T (Mac: ⌥+T) to toggle translation.</div>
-        <span data-i18n="shortcutChange">To change, visit</span>
-        <a href="#" class="chrome-link" data-url="chrome://extensions/shortcuts">chrome://extensions/shortcuts</a>
       </div>
 
       <div id="statusMsg" class="status-msg" style="display:none"></div>
@@ -190,74 +164,118 @@
           <a href="#" class="btn-secondary chrome-link" data-url="chrome://extensions/shortcuts" style="text-align: center; text-decoration: none; display: inline-block; width: auto;" data-i18n="editShortcuts">Edit (Alt+T)</a>
         </div>
 
-        <div class="field">
-          <div class="field-label-with-info">
-            <label data-i18n="cacheResults">Cache Translation Results</label>
-            <div class="info-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-              <div class="info-tooltip" data-i18n="cacheTooltip">
-                Enabling cache can improve translation speed and reduce duplicate requests, but may result in translations not being the most up-to-date.
+      <div class="section info-section">
+        <label class="section-label" data-i18n="translationSettings">Translation Settings</label>
+        <div class="section-content">
+          <div class="field">
+            <div class="field-label-with-info">
+              <label data-i18n="cacheResults">Cache Translation Results</label>
+              <div class="info-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                <div class="info-tooltip" data-i18n="cacheTooltip">
+                  Enabling cache can improve translation speed and reduce duplicate requests, but may result in translations not being the most up-to-date.
+                </div>
               </div>
             </div>
+            <label class="switch">
+              <input type="checkbox" id="useCacheSwitch" checked>
+              <span class="slider round"></span>
+            </label>
           </div>
-          <label class="switch">
-            <input type="checkbox" id="useCacheSwitch" checked>
-            <span class="slider round"></span>
-          </label>
+        </div>
+      </div>
+
+      <div class="section" style="margin-top: 10px;">
+        <label class="section-label" data-i18n="ocrTranslateTitle">Screenshot OCR Settings</label>
+        <div class="section-content">
+          <div class="field" style="flex-direction: row; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px;" data-i18n="ocrBilingual">Bilingual Translation</span>
+            <label class="switch" style="transform: scale(0.8);">
+              <input type="checkbox" id="ocrBilingualSwitch" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="field" style="flex-direction: row; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 12px;" data-i18n="ocrAutoClose">Auto-close (s)</span>
+              <input type="number" id="ocrAutoCloseTime" min="1" max="60" value="10" style="width: 45px; padding: 2px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <label class="switch" style="transform: scale(0.8);">
+              <input type="checkbox" id="ocrAutoCloseSwitch">
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="field">
+            <label><span data-i18n="ocrOpacity">Popup Opacity</span> (<span id="ocrOpacityVal">1.0</span>)</label>
+            <input type="range" id="ocrOpacitySlider" min="0" max="1" step="0.1" value="1">
+          </div>
+
+          <div class="field" style="flex-direction: row; justify-content: space-between; align-items: center;">
+            <label style="font-size: 12px;" data-i18n="ocrFontColor">Font Color</label>
+            <input type="color" id="ocrFontColor" value="#ffffff" style="width: 28px; height: 28px; padding: 0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
+          </div>
+          
+          <div class="field">
+            <button id="closeAllOcrBtn" class="btn-secondary" style="width: 100%; font-size: 12px; padding: 6px;" data-i18n="closeAllOcrBtn">Close All Popups</button>
+          </div>
         </div>
       </div>
 
       <div class="section" style="margin-top: 10px;">
         <label class="section-label" data-i18n="youtubeSettingsTitle">YouTube dual subs settings</label>
-        
-        <div class="field" style="flex-direction: row; justify-content: space-between; align-items: center;">
-          <label data-i18n="ytSubColorMode">Color Mode</label>
-          <select id="ytSubColorMode" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; width: 120px;">
-            <option value="custom" data-i18n="ytSubColorCustom">Custom</option>
-            <option value="inherit" data-i18n="ytSubColorInherit">Original</option>
-          </select>
-        </div>
-        
-        <div class="field" id="ytSubColorField" style="flex-direction: row; justify-content: space-between; align-items: center;">
-          <label data-i18n="ytSubColor">Color</label>
-          <input type="color" id="ytSubColor" value="#ffeb3b" style="width: 28px; height: 28px; padding: 0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
-        </div>
+        <div class="section-content">
+          <div class="field" style="flex-direction: row; justify-content: space-between; align-items: center;">
+            <label data-i18n="ytSubColorMode">Color Mode</label>
+            <select id="ytSubColorMode" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; width: 120px;">
+              <option value="custom" data-i18n="ytSubColorCustom">Custom</option>
+              <option value="inherit" data-i18n="ytSubColorInherit">Original</option>
+            </select>
+          </div>
+          
+          <div class="field" id="ytSubColorField" style="flex-direction: row; justify-content: space-between; align-items: center;">
+            <label data-i18n="ytSubColor">Color</label>
+            <input type="color" id="ytSubColor" value="#ffeb3b" style="width: 28px; height: 28px; padding: 0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
+          </div>
 
-        <div class="field">
-          <label><span data-i18n="ytSubOpacity">Opacity</span> (<span id="ytSubOpacityVal">1.0</span>)</label>
-          <input type="range" id="ytSubOpacity" min="0.1" max="1" step="0.1" value="1">
-        </div>
+          <div class="field">
+            <label><span data-i18n="ytSubOpacity">Opacity</span> (<span id="ytSubOpacityVal">1.0</span>)</label>
+            <input type="range" id="ytSubOpacity" min="0.1" max="1" step="0.1" value="1">
+          </div>
 
-        <div class="field">
-          <label data-i18n="ytSubPosition">Position</label>
-          <select id="ytSubPosition" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd;">
-            <option value="below" data-i18n="ytSubBelow">Below Original</option>
-            <option value="above" data-i18n="ytSubAbove">Above Original</option>
-          </select>
+          <div class="field">
+            <label data-i18n="ytSubPosition">Position</label>
+            <select id="ytSubPosition" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd;">
+              <option value="below" data-i18n="ytSubBelow">Below Original</option>
+              <option value="above" data-i18n="ytSubAbove">Above Original</option>
+            </select>
+          </div>
         </div>
       </div>
 
       <div class="section" style="margin-top: 10px;">
         <label class="section-label" data-i18n="ttsSettings">TTS Settings</label>
-        
-        <div class="field">
-          <label data-i18n="ttsVoice">Voice</label>
-          <select id="ttsVoiceSelect" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd;"></select>
-        </div>
+        <div class="section-content">
+          <div class="field">
+            <label data-i18n="ttsVoice">Voice</label>
+            <select id="ttsVoiceSelect" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd;"></select>
+          </div>
 
-        <div class="field">
-          <label><span data-i18n="ttsRate">Speed</span> (<span id="ttsRateVal">1.0</span>)</label>
-          <input type="range" id="ttsRate" min="0.5" max="3.0" step="0.1" value="1.0">
-        </div>
-
-        <div class="field">
-          <label><span data-i18n="ttsPitch">Pitch</span> (<span id="ttsPitchVal">1.0</span>)</label>
-          <input type="range" id="ttsPitch" min="0.5" max="2.0" step="0.1" value="1.0">
-        </div>
-
-        <div class="field">
-          <label><span data-i18n="ttsVolume">Volume</span> (<span id="ttsVolumeVal">1.0</span>)</label>
-          <input type="range" id="ttsVolume" min="0.0" max="1.0" step="0.1" value="1.0">
+          <div class="field">
+            <label><span data-i18n="ttsRate">Speed</span> (<span id="ttsRateVal">1.0</span>)</label>
+            <input type="range" id="ttsRateSlider" min="0.5" max="2" step="0.1" value="1">
+          </div>
+          
+          <div class="field">
+            <label><span data-i18n="ttsPitch">Pitch</span> (<span id="ttsPitchVal">1.0</span>)</label>
+            <input type="range" id="ttsPitchSlider" min="0" max="2" step="0.1" value="1">
+          </div>
+          
+          <div class="field">
+            <label><span data-i18n="ttsVolume">Volume</span> (<span id="ttsVolumeVal">1.0</span>)</label>
+            <input type="range" id="ttsVolumeSlider" min="0" max="1" step="0.1" value="1">
+          </div>
         </div>
       </div>
 
