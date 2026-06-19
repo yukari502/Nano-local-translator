@@ -478,3 +478,327 @@ function onMouseDown(e) {
 document.addEventListener('mouseup', onMouseUp);
 document.addEventListener('mousedown', onMouseDown);
 
+// ============================================
+// Hover Translation Feature
+// ============================================
+let hoverTranslateEnabled = false;
+
+function initHoverTranslation() {
+  let hoverTimer = null;
+  let lastHoveredElement = null;
+  let lastHoveredWord = '';
+
+  chrome.storage.local.get(['hoverTranslate'], (res) => {
+    if (res.hoverTranslate !== undefined) {
+      hoverTranslateEnabled = (res.hoverTranslate === 'on');
+    }
+  });
+
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.hoverTranslate) {
+      hoverTranslateEnabled = (changes.hoverTranslate.newValue === 'on');
+    }
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isExtEnabled || !hoverTranslateEnabled) return;
+    // Don't trigger if we're hovering inside our own tooltip
+    if (tooltipDiv && tooltipDiv.contains(e.target)) return;
+
+    clearTimeout(hoverTimer);
+
+    // If text is selected, hover translation is suppressed
+    if (window.getSelection().toString().trim().length > 0) return;
+
+    hoverTimer = setTimeout(() => {
+      handleHover(e.clientX, e.clientY);
+    }, 300); // 300ms hover delay
+  });
+
+  async function handleHover(x, y) {
+    if (!isContextValid() || !isExtEnabled || !hoverTranslateEnabled) return;
+    
+    let range;
+    if (document.caretRangeFromPoint) {
+      range = document.caretRangeFromPoint(x, y);
+    } else if (document.caretPositionFromPoint) {
+      const pos = document.caretPositionFromPoint(x, y);
+      if (pos) {
+        range = document.createRange();
+        range.setStart(pos.offsetNode, pos.offset);
+        range.collapse(true);
+      }
+    }
+
+    if (!range) return;
+
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return;
+    
+    // Extract word
+    const text = node.textContent;
+    const offset = range.startOffset;
+    
+    // Find word boundaries
+    let start = offset;
+    let end = offset;
+    
+    const isWordChar = (char) => /[\w\u4e00-\u9fa5\u3040-\u30ff\u3400-\u4dbf\uf900-\ufaff\uff66-\uff9f]/.test(char);
+
+    if (!text[offset] || !isWordChar(text[offset])) return;
+
+    while (start > 0 && isWordChar(text[start - 1])) start--;
+    while (end < text.length && isWordChar(text[end])) end++;
+
+    const word = text.slice(start, end).trim();
+    if (!word || word === lastHoveredWord) return;
+    
+    lastHoveredWord = word;
+    lastHoveredElement = node;
+
+    // Show tooltip
+    if (tooltipDiv) tooltipDiv.style.display = 'none';
+
+    try {
+      const tooltip = createTooltip();
+      tooltipOriginal.textContent = word;
+      tooltipResult.style.display = 'block';
+      tooltipResult.textContent = 'Translating...';
+      tooltipDiv.querySelector('#ai-web-translator-speak-res').style.display = 'none';
+      tooltip.style.display = 'block';
+      
+      tooltip.style.left = `${x + window.scrollX + 15}px`;
+      tooltip.style.top = `${y + window.scrollY + 20}px`;
+
+      const res = await new Promise((resolve) => {
+        chrome.storage.local.get(['sourceLang', 'targetLang'], resolve);
+      });
+      const sourceLang = res.sourceLang || 'en';
+      const targetLang = res.targetLang || 'zh';
+
+      const resp = await chrome.runtime.sendMessage({
+        type: 'translateText',
+        text: word
+      });
+
+      if (resp && resp.translations && resp.translations[word]) {
+        tooltipResult.textContent = resp.translations[word];
+        tooltipDiv.querySelector('#ai-web-translator-speak-res').style.display = 'block';
+      } else {
+        tooltipResult.textContent = 'Translation failed.';
+      }
+    } catch (e) {
+      if (tooltipResult) tooltipResult.textContent = 'Error connecting.';
+    }
+  }
+
+  document.addEventListener('scroll', () => {
+    clearTimeout(hoverTimer);
+    lastHoveredWord = '';
+  }, true);
+}
+
+initHoverTranslation();
+
+// ============================================
+// YouTube Dual Subtitles Feature
+// ============================================
+let youtubeDualSubsEnabled = false;
+let ytSubConfig = {
+  colorMode: 'custom',
+  color: '#ffeb3b',
+  opacity: '1',
+  position: 'below'
+};
+
+function initYoutubeObserver() {
+  if (!window.location.hostname.includes('youtube.com')) return;
+  
+  let observer = null;
+  const translatedCache = new Map();
+
+  function startObserving() {
+    if (observer) return;
+    const captionContainer = document.querySelector('.ytp-caption-window-container') || document.body;
+
+    observer = new MutationObserver((mutations) => {
+      if (!youtubeDualSubsEnabled || !isExtEnabled) return;
+      
+      const segmentsToProcess = new Set();
+      mutations.forEach(mutation => {
+        let target = mutation.target;
+        if (target.classList && target.classList.contains('ytp-caption-segment')) {
+          segmentsToProcess.add(target);
+        } else if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              if (node.classList.contains('ytp-caption-segment')) {
+                segmentsToProcess.add(node);
+              }
+              const segments = node.querySelectorAll('.ytp-caption-segment');
+              segments.forEach(s => segmentsToProcess.add(s));
+            }
+          });
+        }
+      });
+
+      segmentsToProcess.forEach(handleNewSubtitle);
+    });
+
+    observer.observe(captionContainer, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  }
+
+  function extractOriginalText(node) {
+    let text = '';
+    for (const child of node.childNodes) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        text += child.textContent;
+      } else if (child.nodeType === Node.ELEMENT_NODE && !child.classList.contains('ai-yt-sub') && !child.classList.contains('ai-yt-sub-br')) {
+        text += extractOriginalText(child);
+      }
+    }
+    return text.trim();
+  }
+
+  let translateTimeout = null;
+  let pendingTranslations = new Map();
+
+  async function handleNewSubtitle(segment) {
+    const text = extractOriginalText(segment);
+    if (!text) return;
+    
+    const currentTranslated = segment.getAttribute('data-translated-text');
+    if (currentTranslated === text) return;
+    
+    segment.setAttribute('data-translated-text', text);
+
+    if (translatedCache.has(text)) {
+      applySubtitleTranslation(segment, text, translatedCache.get(text));
+      return;
+    }
+
+    pendingTranslations.set(segment, text);
+    if (!translateTimeout) {
+      translateTimeout = setTimeout(processPendingTranslations, 200);
+    }
+  }
+
+  async function processPendingTranslations() {
+    translateTimeout = null;
+    if (pendingTranslations.size === 0) return;
+
+    const segments = Array.from(pendingTranslations.keys());
+    const texts = Array.from(new Set(pendingTranslations.values()));
+    pendingTranslations.clear();
+
+    try {
+      const res = await new Promise((resolve) => {
+        chrome.storage.local.get(['sourceLang', 'targetLang'], resolve);
+      });
+      const sourceLang = res.sourceLang || 'en';
+      const targetLang = res.targetLang || 'zh';
+
+      const resp = await chrome.runtime.sendMessage({
+        type: 'translate',
+        texts: texts,
+        sourceLang: sourceLang,
+        targetLang: targetLang
+      });
+
+      if (resp && resp.translations) {
+        for (const [text, translatedText] of Object.entries(resp.translations)) {
+          if (translatedText && translatedText !== text) {
+            translatedCache.set(text, translatedText);
+          }
+        }
+      }
+
+      segments.forEach(segment => {
+        const text = segment.getAttribute('data-translated-text');
+        if (translatedCache.has(text)) {
+          applySubtitleTranslation(segment, text, translatedCache.get(text));
+        }
+      });
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  function applySubtitleTranslation(segment, originalText, translatedText) {
+    if (segment.getAttribute('data-translated-text') !== originalText) return;
+
+    const oldBr = segment.querySelector('.ai-yt-sub-br');
+    const oldDiv = segment.querySelector('.ai-yt-sub');
+    if (oldBr) oldBr.remove();
+    if (oldDiv) oldDiv.remove();
+
+    const span = document.createElement('span');
+    span.className = 'ai-yt-sub';
+    span.textContent = translatedText;
+    if (ytSubConfig.colorMode === 'inherit') {
+      span.style.color = 'inherit';
+    } else {
+      span.style.color = ytSubConfig.color;
+    }
+    span.style.opacity = ytSubConfig.opacity;
+    span.style.fontSize = '0.9em';
+    span.style.display = 'block';
+    span.style.marginTop = ytSubConfig.position === 'below' ? '2px' : '0px';
+    span.style.marginBottom = ytSubConfig.position === 'above' ? '2px' : '0px';
+    
+    const br = document.createElement('br');
+    br.className = 'ai-yt-sub-br';
+    
+    if (ytSubConfig.position === 'above') {
+      segment.insertBefore(br, segment.firstChild);
+      segment.insertBefore(span, br);
+    } else {
+      segment.appendChild(br);
+      segment.appendChild(span);
+    }
+  }
+
+  chrome.storage.local.get(['youtubeDualSubs', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition'], (res) => {
+    if (res.youtubeDualSubs !== undefined) {
+      youtubeDualSubsEnabled = (res.youtubeDualSubs === 'on');
+    }
+    if (res.ytSubColorMode) ytSubConfig.colorMode = res.ytSubColorMode;
+    if (res.ytSubColor) ytSubConfig.color = res.ytSubColor;
+    if (res.ytSubOpacity) ytSubConfig.opacity = res.ytSubOpacity;
+    if (res.ytSubPosition) ytSubConfig.position = res.ytSubPosition;
+    
+    if (youtubeDualSubsEnabled) startObserving();
+  });
+
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.youtubeDualSubs) {
+      youtubeDualSubsEnabled = (changes.youtubeDualSubs.newValue === 'on');
+      if (youtubeDualSubsEnabled) startObserving();
+    }
+    if (changes.ytSubColorMode) {
+      ytSubConfig.colorMode = changes.ytSubColorMode.newValue;
+      translatedCache.clear();
+    }
+    if (changes.ytSubColor) {
+      ytSubConfig.color = changes.ytSubColor.newValue;
+      translatedCache.clear();
+    }
+    if (changes.ytSubOpacity) {
+      ytSubConfig.opacity = changes.ytSubOpacity.newValue;
+      translatedCache.clear();
+    }
+    if (changes.ytSubPosition) {
+      ytSubConfig.position = changes.ytSubPosition.newValue;
+      translatedCache.clear();
+    }
+  });
+
+  startObserving();
+}
+
+initYoutubeObserver();
+

@@ -25,7 +25,8 @@ const I18N = {
     supportDev: "If you find this project helpful, you can Buy Me a Coffee.", buyCoffee: "Buy me a coffee ☕",
     shortcutTip: "Shortcut: Alt+T (Mac: ⌥+T) to toggle.", shortcutChange: "To change, visit",
     selectToTranslateTitle: "Select-to-Translate", selectToTranslateLabel: "Status",
-    s2tTranslate: "Translation", s2tSpeak: "Speak Aloud (TTS)",
+    s2tTranslate: "Select Translation", hoverTranslate: "Hover Translation", youtubeDualSubs: "YouTube Dual Subs", s2tSpeak: "Speak Aloud (TTS)",
+    youtubeSettings: "YouTube Settings", ytSubColorMode: "Color Mode", ytSubColorCustom: "Custom", ytSubColorInherit: "Original", ytSubColor: "Custom Color", ytSubOpacity: "Opacity", ytSubPosition: "Position", ytSubBelow: "Below Original", ytSubAbove: "Above Original",
     statusOff: "Off", statusOn: "On", shortcutSettings: "Shortcuts",
     fullPageShortcut: "Full Page Translation", editShortcuts: "Edit (Alt+T)",
     translationSettings: "Translation Settings", cacheResults: "Cache Translation Results",
@@ -53,7 +54,8 @@ const I18N = {
     supportDev: "如果你觉得这个项目有帮助，可以请我喝杯咖啡。", buyCoffee: "请我喝杯咖啡 ☕",
     shortcutTip: "快捷键：Alt+T (Mac: ⌥+T) 切换翻译", shortcutChange: "修改快捷键请访问",
     selectToTranslateTitle: "划词翻译", selectToTranslateLabel: "状态",
-    s2tTranslate: "划词翻译", s2tSpeak: "划词朗读 (TTS)",
+    s2tTranslate: "划词翻译", hoverTranslate: "悬停选词翻译", youtubeDualSubs: "YouTube双语字幕", s2tSpeak: "划词朗读 (TTS)",
+    youtubeSettings: "YouTube 设置", ytSubColorMode: "颜色模式", ytSubColorCustom: "自定义", ytSubColorInherit: "跟随原文", ytSubColor: "自定义颜色", ytSubOpacity: "透明度", ytSubPosition: "字幕位置", ytSubBelow: "在原文下方", ytSubAbove: "在原文上方",
     statusOff: "关闭", statusOn: "开启", shortcutSettings: "快捷键设置",
     fullPageShortcut: "全文翻译快捷键", editShortcuts: "编辑 (Alt+T)",
     translationSettings: "翻译设置", cacheResults: "缓存翻译结果",
@@ -81,7 +83,8 @@ const I18N = {
     supportDev: "如果您覺得這個專案有幫助，可以請我喝杯咖啡。", buyCoffee: "請我喝杯咖啡 ☕",
     shortcutTip: "快捷鍵：Alt+T (Mac: ⌥+T) 切換翻譯", shortcutChange: "修改快捷鍵請訪問",
     selectToTranslateTitle: "劃詞翻譯", selectToTranslateLabel: "狀態",
-    s2tTranslate: "劃詞翻譯", s2tSpeak: "劃詞朗讀 (TTS)",
+    s2tTranslate: "劃詞翻譯", hoverTranslate: "懸停選詞翻譯", youtubeDualSubs: "YouTube雙語字幕", s2tSpeak: "劃詞朗讀 (TTS)",
+    youtubeSettings: "YouTube 設置", ytSubColorMode: "顏色模式", ytSubColorCustom: "自定義", ytSubColorInherit: "跟隨原文", ytSubColor: "自定義顏色", ytSubOpacity: "透明度", ytSubPosition: "字幕位置", ytSubBelow: "在原文下方", ytSubAbove: "在原文上方",
     statusOff: "關閉", statusOn: "開啟", shortcutSettings: "快捷鍵設置",
     fullPageShortcut: "全文翻譯快捷鍵", editShortcuts: "編輯 (Alt+T)",
     translationSettings: "翻譯設置", cacheResults: "緩存翻譯結果",
@@ -295,6 +298,14 @@ const saveSettingsBtn = $('saveSettingsBtn');
 const settingsStatusMsg = $('settingsStatusMsg');
 const backBtn = $('backBtn');
 const s2tTranslateSwitch = $('s2tTranslateSwitch');
+const hoverTranslateSwitch = $('hoverTranslateSwitch');
+const youtubeDualSubsSwitch = $('youtubeDualSubsSwitch');
+const ytSubColorMode = $('ytSubColorMode');
+const ytSubColorField = $('ytSubColorField');
+const ytSubColor = $('ytSubColor');
+const ytSubOpacity = $('ytSubOpacity');
+const ytSubOpacityVal = $('ytSubOpacityVal');
+const ytSubPosition = $('ytSubPosition');
 
 // TTS elements
 const ttsVoiceSelect = $('ttsVoiceSelect');
@@ -375,7 +386,7 @@ async function init() {
   await checkTranslatorApi();
   const saved = await chrome.storage.local.get([
     'isEnabled', 'uiLang', 'sourceLang', 'targetLang', 'mode', 
-    's2tTranslate', 'useCache', 'totalTranslates', 'hideWelcome', 'selectToTranslate',
+    's2tTranslate', 'hoverTranslate', 'youtubeDualSubs', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition', 'useCache', 'totalTranslates', 'hideWelcome', 'selectToTranslate',
     'ttsVoice', 'ttsRate', 'ttsPitch', 'ttsVolume'
   ]);
   
@@ -411,6 +422,17 @@ async function init() {
     s2tTrans = saved.selectToTranslate !== undefined ? saved.selectToTranslate : 'on';
   }
   s2tTranslateSwitch.checked = (s2tTrans === 'on');
+  hoverTranslateSwitch.checked = (saved.hoverTranslate === 'on');
+  youtubeDualSubsSwitch.checked = (saved.youtubeDualSubs === 'on');
+  
+  if (saved.ytSubColorMode) ytSubColorMode.value = saved.ytSubColorMode;
+  ytSubColorField.style.display = ytSubColorMode.value === 'inherit' ? 'none' : 'flex';
+  if (saved.ytSubColor) ytSubColor.value = saved.ytSubColor;
+  if (saved.ytSubOpacity) {
+    ytSubOpacity.value = saved.ytSubOpacity;
+    if (ytSubOpacityVal) ytSubOpacityVal.textContent = saved.ytSubOpacity;
+  }
+  if (saved.ytSubPosition) ytSubPosition.value = saved.ytSubPosition;
 
   if (saved.useCache !== undefined) useCacheSwitch.checked = saved.useCache;
   
@@ -464,6 +486,34 @@ async function init() {
   s2tTranslateSwitch.addEventListener('change', async (e) => {
     const val = e.target.checked ? 'on' : 'off';
     await chrome.storage.local.set({ s2tTranslate: val });
+  });
+
+  hoverTranslateSwitch.addEventListener('change', async (e) => {
+    const val = e.target.checked ? 'on' : 'off';
+    await chrome.storage.local.set({ hoverTranslate: val });
+  });
+
+  youtubeDualSubsSwitch.addEventListener('change', async (e) => {
+    const val = e.target.checked ? 'on' : 'off';
+    await chrome.storage.local.set({ youtubeDualSubs: val });
+  });
+
+  ytSubColorMode.addEventListener('change', async (e) => {
+    ytSubColorField.style.display = e.target.value === 'inherit' ? 'none' : 'flex';
+    await chrome.storage.local.set({ ytSubColorMode: e.target.value });
+  });
+
+  ytSubColor.addEventListener('input', async (e) => {
+    await chrome.storage.local.set({ ytSubColor: e.target.value });
+  });
+  
+  ytSubOpacity.addEventListener('input', async (e) => {
+    if (ytSubOpacityVal) ytSubOpacityVal.textContent = e.target.value;
+    await chrome.storage.local.set({ ytSubOpacity: e.target.value });
+  });
+  
+  ytSubPosition.addEventListener('change', async (e) => {
+    await chrome.storage.local.set({ ytSubPosition: e.target.value });
   });
 
   document.querySelectorAll('.chrome-link, .shortcut-link').forEach(link => {
