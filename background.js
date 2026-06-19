@@ -52,7 +52,92 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ ok: true });
     return true;
   }
+  if (request.type === 'process_ocr') {
+    handleOcrRequest(request).then(sendResponse);
+    return true;
+  }
+  if (request.action === 'test_capture') {
+    debugLog('Manual test_capture triggered from popup');
+    (async () => {
+      const data = await chrome.storage.local.get(['isEnabled', 'ocrTranslate']);
+      if (data.isEnabled === false || data.ocrTranslate !== 'on') {
+        debugLog('Aborted: feature disabled');
+        return;
+      }
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab) {
+        try {
+          const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+          chrome.tabs.sendMessage(tab.id, { action: 'start_crop', image: dataUrl });
+          debugLog('Test capture successful');
+        } catch (e) {
+          debugLog('Test capture error: ' + e.message);
+        }
+      } else {
+        debugLog('No active tab found for test capture.');
+      }
+    })();
+  }
 });
+
+let creatingOffscreen;
+
+async function setupOffscreenDocument() {
+  const path = 'offscreen.html';
+  if (await chrome.offscreen.hasDocument()) return;
+  
+  if (creatingOffscreen) {
+    await creatingOffscreen;
+  } else {
+    creatingOffscreen = chrome.offscreen.createDocument({
+      url: path,
+      reasons: [chrome.offscreen.Reason.WORKERS],
+      justification: 'Run Tesseract OCR worker'
+    });
+    await creatingOffscreen;
+    creatingOffscreen = null;
+  }
+}
+
+async function handleOcrRequest(request) {
+  try {
+    await setupOffscreenDocument();
+    const response = await chrome.runtime.sendMessage({
+      action: 'do_ocr',
+      imageData: request.imageData
+    });
+    
+    if (!response || !response.success) {
+      throw new Error(response ? response.error : 'Unknown OCR error');
+    }
+    
+    const text = response.text;
+    if (!text) return { success: true, text: '', translation: '' };
+    
+    // Translate text
+    const data = await chrome.storage.local.get(['sourceLang', 'targetLang']);
+    const res = await handleTranslate({
+      texts: [text],
+      sourceLang: data.sourceLang || 'en',
+      targetLang: data.targetLang || 'zh'
+    });
+    
+    return { success: true, text: text, translation: res.translations[text] };
+  } catch (error) {
+    console.error("OCR process error:", error);
+    return { success: false, error: error.toString() };
+  }
+}
+
+async function debugLog(msg) {
+  try {
+    const data = await chrome.storage.local.get(['debugLogs']);
+    const logs = data.debugLogs || [];
+    logs.push(new Date().toLocaleTimeString() + ': ' + msg);
+    if (logs.length > 50) logs.shift();
+    await chrome.storage.local.set({ debugLogs: logs });
+  } catch (e) {}
+}
 
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'translate-page') {
@@ -81,6 +166,34 @@ chrome.commands.onCommand.addListener(async (command) => {
           targetLang: data.targetLang || 'zh'
         }).catch(() => {});
       }
+    }
+  } else if (command === 'capture-translate') {
+    debugLog('Command capture-translate triggered');
+    const data = await chrome.storage.local.get(['isEnabled', 'ocrTranslate']);
+    debugLog('Settings: isEnabled=' + data.isEnabled + ', ocrTranslate=' + data.ocrTranslate);
+    if (data.isEnabled === false || data.ocrTranslate !== 'on') {
+      debugLog('Aborted: feature is disabled in settings.');
+      return;
+    }
+    
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      debugLog('Active tab found: ' + tab.url);
+      try {
+        debugLog('Attempting captureVisibleTab...');
+        const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+        debugLog('Capture success, length: ' + (dataUrl ? dataUrl.length : 0));
+        chrome.tabs.sendMessage(tab.id, {
+          action: 'start_crop',
+          image: dataUrl
+        });
+        debugLog('Sent start_crop to content script');
+      } catch (e) {
+        console.error("Failed to capture screen:", e);
+        debugLog('Capture/Send Error: ' + e.message);
+      }
+    } else {
+      debugLog('No active tab found.');
     }
   }
 });

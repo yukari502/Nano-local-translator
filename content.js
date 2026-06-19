@@ -111,10 +111,18 @@ function injectStyles() {
   #ai-web-translator-original-container {
     border-bottom-color: #555;
   }
-  #ai-web-translator-result {
+  #ai-web-translator-result-container {
     color: #fff;
   }
-}
+  .ai-ocr-popup {
+    --ai-ocr-bg: #252526 !important;
+    --ai-ocr-border: #454545 !important;
+    --ai-ocr-color: #e0e0e0 !important;
+    --ai-ocr-header-bg: #1e1e1e !important;
+    --ai-ocr-divider: #555 !important;
+    --ai-ocr-orig-color: #aaa !important;
+    --ai-ocr-trans-color: #64b5f6 !important;
+    --ai-ocr-footer-bg: #2a2a2b !important;
   }
 }
   `;
@@ -828,3 +836,273 @@ function initYoutubeObserver() {
 
 initYoutubeObserver();
 
+// ── Screenshot OCR Translation ────────────────────────
+
+let isOcrCropping = false;
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'start_crop') {
+    startOcrCropOverlay(request.image);
+  } else if (request.action === 'close_all_ocr') {
+    document.querySelectorAll('.ai-ocr-popup').forEach(p => p.remove());
+  }
+});
+
+function startOcrCropOverlay(dataUrl) {
+  if (isOcrCropping) return;
+  isOcrCropping = true;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'ai-crop-overlay';
+  Object.assign(overlay.style, {
+    position: 'fixed', top: '0', left: '0', width: '100vw', height: '100vh',
+    zIndex: '2147483647', cursor: 'crosshair', background: 'rgba(0,0,0,0.3)',
+    userSelect: 'none'
+  });
+  
+  const selection = document.createElement('div');
+  Object.assign(selection.style, {
+    position: 'fixed', border: '2px solid #1a73e8', background: 'rgba(26,115,232,0.2)',
+    display: 'none', pointerEvents: 'none', boxSizing: 'border-box'
+  });
+  
+  overlay.appendChild(selection);
+  document.body.appendChild(overlay);
+
+  let startX, startY;
+  
+  const onMouseDown = (e) => {
+    startX = e.clientX;
+    startY = e.clientY;
+    selection.style.left = startX + 'px';
+    selection.style.top = startY + 'px';
+    selection.style.width = '0px';
+    selection.style.height = '0px';
+    selection.style.display = 'block';
+    
+    overlay.addEventListener('mousemove', onMouseMove);
+    overlay.addEventListener('mouseup', onMouseUp);
+  };
+  
+  const onMouseMove = (e) => {
+    const curX = e.clientX;
+    const curY = e.clientY;
+    const x = Math.min(startX, curX);
+    const y = Math.min(startY, curY);
+    const w = Math.abs(curX - startX);
+    const h = Math.abs(curY - startY);
+    
+    selection.style.left = x + 'px';
+    selection.style.top = y + 'px';
+    selection.style.width = w + 'px';
+    selection.style.height = h + 'px';
+  };
+  
+  const onMouseUp = (e) => {
+    overlay.removeEventListener('mousemove', onMouseMove);
+    overlay.removeEventListener('mouseup', onMouseUp);
+    
+    const curX = e.clientX;
+    const curY = e.clientY;
+    const x = Math.min(startX, curX);
+    const y = Math.min(startY, curY);
+    const w = Math.abs(curX - startX);
+    const h = Math.abs(curY - startY);
+    
+    overlay.remove();
+    isOcrCropping = false;
+    document.removeEventListener('keydown', onKeyDown);
+    
+    if (w > 10 && h > 10) {
+      processOcrCrop(dataUrl, x, y, w, h);
+    }
+  };
+  
+  overlay.addEventListener('mousedown', onMouseDown);
+  
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      isOcrCropping = false;
+      document.removeEventListener('keydown', onKeyDown);
+    }
+  };
+  document.addEventListener('keydown', onKeyDown);
+}
+
+function processOcrCrop(dataUrl, x, y, w, h) {
+  // Center of the cropped area
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  // Position the popup at the top-right relative to the center
+  const popupX = cx;
+  const popupY = Math.max(10, cy - 150); // Shift up a bit, ensure it stays on screen
+
+  const popup = createOcrPopup(popupX, popupY);
+  popup.setContent('Loading OCR & Translation...', '');
+  
+  const img = new Image();
+  img.onload = () => {
+    const dpr = window.devicePixelRatio || 1;
+    const canvas = document.createElement('canvas');
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.drawImage(img, x * dpr, y * dpr, w * dpr, h * dpr, 0, 0, w * dpr, h * dpr);
+    const croppedDataUrl = canvas.toDataURL('image/png');
+    
+    chrome.runtime.sendMessage({ type: 'process_ocr', imageData: croppedDataUrl }, (response) => {
+      if (response && response.success) {
+        if (!response.text) {
+          popup.setContent('No text found in selection.', '');
+        } else {
+          popup.setContent(response.text, response.translation || 'Translation failed');
+          popup.setOriginalText(response.text);
+        }
+      } else {
+        popup.setContent('OCR Error: ' + (response ? response.error : 'Unknown'), '');
+      }
+    });
+  };
+  img.src = dataUrl;
+}
+
+function createOcrPopup(x, y) {
+  const popup = document.createElement('div');
+  popup.className = 'ai-ocr-popup';
+  Object.assign(popup.style, {
+    position: 'fixed', left: Math.min(x, window.innerWidth - 300) + 'px', top: Math.min(y, window.innerHeight - 200) + 'px',
+    width: '300px', backgroundColor: 'var(--ai-ocr-bg, #fff)', border: '1px solid var(--ai-ocr-border, #ccc)', borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: '2147483647', display: 'flex', flexDirection: 'column',
+    fontFamily: 'sans-serif', color: 'var(--ai-ocr-color, #333)', overflow: 'hidden', opacity: '1'
+  });
+
+  // Header (Draggable)
+  const header = document.createElement('div');
+  Object.assign(header.style, {
+    padding: '8px', backgroundColor: 'var(--ai-ocr-header-bg, #f1f3f4)', borderBottom: '1px solid var(--ai-ocr-border, #ddd)', display: 'flex',
+    justifyContent: 'space-between', alignItems: 'center', cursor: 'move', userSelect: 'none'
+  });
+  
+  const title = document.createElement('span');
+  title.textContent = 'OCR Translate';
+  title.style.fontSize = '12px';
+  title.style.fontWeight = 'bold';
+  
+  const controls = document.createElement('div');
+  controls.style.display = 'flex';
+  controls.style.alignItems = 'center';
+  controls.style.gap = '8px';
+  
+  const opacityInput = document.createElement('input');
+  opacityInput.type = 'range';
+  opacityInput.min = '0.2';
+  opacityInput.max = '1';
+  opacityInput.step = '0.1';
+  opacityInput.value = '1';
+  opacityInput.style.width = '60px';
+  opacityInput.title = 'Opacity';
+  opacityInput.addEventListener('input', (e) => {
+    popup.style.opacity = e.target.value;
+  });
+  
+  const closeBtn = document.createElement('span');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cursor = 'pointer';
+  closeBtn.style.fontSize = '14px';
+  closeBtn.onclick = () => popup.remove();
+  
+  controls.appendChild(opacityInput);
+  controls.appendChild(closeBtn);
+  header.appendChild(title);
+  header.appendChild(controls);
+  
+  // Content Area
+  const contentArea = document.createElement('div');
+  Object.assign(contentArea.style, {
+    padding: '10px', fontSize: '13px', lineHeight: '1.5', maxHeight: '300px', overflowY: 'auto'
+  });
+  
+  const origDiv = document.createElement('div');
+  origDiv.style.marginBottom = '8px';
+  origDiv.style.color = 'var(--ai-ocr-orig-color, #555)';
+  
+  const transDiv = document.createElement('div');
+  transDiv.style.fontWeight = '500';
+  transDiv.style.color = 'var(--ai-ocr-trans-color, #1a73e8)';
+  
+  // Audio Controls
+  const audioControls = document.createElement('div');
+  Object.assign(audioControls.style, {
+    padding: '8px 10px', borderTop: '1px solid var(--ai-ocr-divider, #eee)', display: 'flex', gap: '10px', backgroundColor: 'var(--ai-ocr-footer-bg, #fafafa)'
+  });
+  
+  let origTextForTTS = '';
+  const origSpeaker = document.createElement('span');
+  origSpeaker.textContent = '🔊 Orig';
+  origSpeaker.style.cursor = 'pointer';
+  origSpeaker.style.fontSize = '12px';
+  origSpeaker.onclick = () => {
+    if(origTextForTTS) chrome.runtime.sendMessage({ type: 'speak', text: origTextForTTS, lang: 'en' });
+  };
+  
+  const transSpeaker = document.createElement('span');
+  transSpeaker.textContent = '🔊 Trans';
+  transSpeaker.style.cursor = 'pointer';
+  transSpeaker.style.fontSize = '12px';
+  transSpeaker.onclick = () => {
+    if(transDiv.textContent) chrome.runtime.sendMessage({ type: 'speak', text: transDiv.textContent, lang: 'zh' });
+  };
+  
+  audioControls.appendChild(origSpeaker);
+  audioControls.appendChild(transSpeaker);
+
+  contentArea.appendChild(origDiv);
+  contentArea.appendChild(transDiv);
+  
+  popup.appendChild(header);
+  popup.appendChild(contentArea);
+  popup.appendChild(audioControls);
+  document.body.appendChild(popup);
+  
+  // Drag logic
+  let isDragging = false;
+  let dragStartX, dragStartY, initialLeft, initialTop;
+  header.onmousedown = (e) => {
+    if (e.target === opacityInput || e.target === closeBtn) return;
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    initialLeft = parseInt(popup.style.left);
+    initialTop = parseInt(popup.style.top);
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', stopDrag);
+  };
+  const onDrag = (e) => {
+    if (!isDragging) return;
+    popup.style.left = (initialLeft + e.clientX - dragStartX) + 'px';
+    popup.style.top = (initialTop + e.clientY - dragStartY) + 'px';
+  };
+  const stopDrag = () => {
+    isDragging = false;
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('mouseup', stopDrag);
+  };
+
+  chrome.storage.local.get(['ocrAutoClose'], (res) => {
+    if (res.ocrAutoClose) {
+      setTimeout(() => { if (document.body.contains(popup)) popup.remove(); }, 10000);
+    }
+  });
+
+  return {
+    setContent: (orig, trans) => {
+      origDiv.textContent = orig;
+      transDiv.textContent = trans;
+    },
+    setOriginalText: (text) => {
+      origTextForTTS = text;
+    }
+  };
+}
