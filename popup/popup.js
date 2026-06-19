@@ -442,8 +442,17 @@ async function init() {
   youtubeDualSubsSwitch.checked = (saved.youtubeDualSubs === 'on');
   
   if (ocrTranslateSwitch) ocrTranslateSwitch.checked = (saved.ocrTranslate === 'on');
+  const ocrBilingualSwitch = $('ocrBilingualSwitch');
+  if (ocrBilingualSwitch) ocrBilingualSwitch.checked = (saved.ocrBilingual !== 'off'); // default on
   if (ocrAutoCloseSwitch) ocrAutoCloseSwitch.checked = (saved.ocrAutoClose === 'on');
   if (ocrSettingsContainer) ocrSettingsContainer.style.display = (saved.ocrTranslate === 'on') ? 'flex' : 'none';
+  
+  const ocrOpacitySlider = $('ocrOpacitySlider');
+  const ocrOpacityVal = $('ocrOpacityVal');
+  if (ocrOpacitySlider && saved.ocrOpacity) {
+    ocrOpacitySlider.value = saved.ocrOpacity;
+    if (ocrOpacityVal) ocrOpacityVal.textContent = saved.ocrOpacity;
+  }
   
   // Call the sorting once on load (no animation)
   setTimeout(() => sortFeatures(false), 50);
@@ -533,10 +542,24 @@ async function init() {
     });
   }
 
+  if (ocrBilingualSwitch) {
+    ocrBilingualSwitch.addEventListener('change', async (e) => {
+      const val = e.target.checked ? 'on' : 'off';
+      await chrome.storage.local.set({ ocrBilingual: val });
+    });
+  }
+
   if (ocrAutoCloseSwitch) {
     ocrAutoCloseSwitch.addEventListener('change', async (e) => {
       const val = e.target.checked ? 'on' : 'off';
       await chrome.storage.local.set({ ocrAutoClose: val });
+    });
+  }
+  
+  if (ocrOpacitySlider) {
+    ocrOpacitySlider.addEventListener('input', async (e) => {
+      if (ocrOpacityVal) ocrOpacityVal.textContent = e.target.value;
+      await chrome.storage.local.set({ ocrOpacity: e.target.value });
     });
   }
   
@@ -595,26 +618,6 @@ async function init() {
         chrome.storage.local.set({ hideWelcome: true });
       });
     }
-  }
-
-  // Debug Logs logic
-  const debugLogArea = $('debugLogArea');
-  const clearDebugBtn = $('clearDebugBtn');
-  if (debugLogArea && clearDebugBtn) {
-    const updateDebugLogs = async () => {
-      const d = await chrome.storage.local.get(['debugLogs']);
-      if (d.debugLogs) {
-        debugLogArea.value = d.debugLogs.join('\n');
-        debugLogArea.scrollTop = debugLogArea.scrollHeight;
-      }
-    };
-    updateDebugLogs();
-    setInterval(updateDebugLogs, 1500); // refresh periodically
-    
-    clearDebugBtn.addEventListener('click', async () => {
-      await chrome.storage.local.set({ debugLogs: [] });
-      debugLogArea.value = '';
-    });
   }
 }
 

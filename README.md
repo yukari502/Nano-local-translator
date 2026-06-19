@@ -5,8 +5,11 @@ A privacy-focused, lightweight Chrome Extension that leverages Chrome's Built-in
 ## Features
 
 - **On-Device Translation**: Translates web pages seamlessly and securely on your device using Chrome's built-in Translator API.
+- **YouTube Dual Subtitles**: Dynamically adds bilingual dual subtitles to YouTube videos with customizable colors, opacity, and positioning.
+- **Screenshot OCR Translate (Alt+S)**: Extract and translate text from screenshots anywhere on the page using a fully local Tesseract OCR engine. The resizable popup supports dark mode and can be freely dragged. *(Note: Currently bundles English `eng` and Japanese `jpn` language data for offline use)*.
 - **Bilingual & Translate-Only Modes**: View both original and translated text side-by-side, or completely replace the text.
 - **Select-to-Translate & TTS**: Simply highlight text on any web page to get a quick translation, read it aloud using Chrome's TTS, or both in an adaptive floating tooltip.
+- **Hover Translate**: Instantly translate text simply by hovering your mouse cursor over it.
 - **Word Highlighting**: Highlights the currently spoken word dynamically during TTS playback.
 - **Multi-language UI**: The extension interface supports 9 languages dynamically (English, Chinese, Japanese, Spanish, French, German, Russian, Arabic).
 - **Adaptive Dark Mode**: The UI and tooltips automatically adapt to your system's light or dark mode preferences.

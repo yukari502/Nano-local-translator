@@ -101,10 +101,14 @@ async function setupOffscreenDocument() {
 
 async function handleOcrRequest(request) {
   try {
+    const data = await chrome.storage.local.get(['sourceLang', 'targetLang']);
+    const lang = data.sourceLang || 'en';
+    
     await setupOffscreenDocument();
     const response = await chrome.runtime.sendMessage({
       action: 'do_ocr',
-      imageData: request.imageData
+      imageData: request.imageData,
+      lang: lang
     });
     
     if (!response || !response.success) {
@@ -115,10 +119,9 @@ async function handleOcrRequest(request) {
     if (!text) return { success: true, text: '', translation: '' };
     
     // Translate text
-    const data = await chrome.storage.local.get(['sourceLang', 'targetLang']);
     const res = await handleTranslate({
       texts: [text],
-      sourceLang: data.sourceLang || 'en',
+      sourceLang: lang,
       targetLang: data.targetLang || 'zh'
     });
     

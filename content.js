@@ -179,17 +179,39 @@ function isTextTranslated(node) {
 
 // ── Translate page ────────────────────────────────────
 
-async function translatePage(mode, sourceLang, targetLang) {
-  currentMode = mode;
-  currentSource = sourceLang;
-  currentTarget = targetLang;
+let pageTranslationObserver = null;
+let pageTranslationMutationObserver = null;
+let pendingPageTranslations = new Set();
+let pageTranslateTimeout = null;
+let elementsToObserve = new Map();
 
-  const entries = gatherTexts(document.body);
-  if (entries.length === 0) return 0;
+function schedulePageTranslationBatch() {
+  if (pageTranslateTimeout) return;
+  pageTranslateTimeout = setTimeout(() => {
+    pageTranslateTimeout = null;
+    processPageTranslationBatch();
+  }, 300);
+}
 
-  const texts = entries.map(e => e.text);
+async function processPageTranslationBatch() {
+  if (pendingPageTranslations.size === 0) return;
+  
+  const elements = Array.from(pendingPageTranslations);
+  pendingPageTranslations.clear();
+  
+  const entriesToTranslate = [];
+  for (const el of elements) {
+    if (elementsToObserve.has(el)) {
+      entriesToTranslate.push(...elementsToObserve.get(el));
+      elementsToObserve.delete(el);
+    }
+  }
 
-  // Send to background in chunks of 20
+  const validEntries = entriesToTranslate.filter(e => e.node.parentNode && !isTextTranslated(e.node));
+  if (validEntries.length === 0) return;
+
+  const texts = validEntries.map(e => e.text);
+  
   const CHUNK = 20;
   const allTranslations = {};
 
@@ -199,8 +221,8 @@ async function translatePage(mode, sourceLang, targetLang) {
       const resp = await chrome.runtime.sendMessage({
         type: 'translate',
         texts: chunk,
-        sourceLang,
-        targetLang
+        sourceLang: currentSource,
+        targetLang: currentTarget
       });
       if (resp?.translations) {
         Object.assign(allTranslations, resp.translations);
@@ -210,13 +232,12 @@ async function translatePage(mode, sourceLang, targetLang) {
     }
   }
 
-  // Apply translations to DOM
   let applied = 0;
-  for (const { node, text } of entries) {
+  for (const { node, text } of validEntries) {
     const translated = allTranslations[text];
     if (!translated || translated === text) continue;
 
-    if (mode === 'translate-only') {
+    if (currentMode === 'translate-only') {
       if (!originalMap.has(node)) {
         originalMap.set(node, text);
       }
@@ -228,9 +249,80 @@ async function translatePage(mode, sourceLang, targetLang) {
     applied++;
   }
 
-  translatedCount = applied;
+  translatedCount += applied;
+  // Let popup know if it asks for status, translatedCount is updated
+}
+
+function observeNewNodes(root) {
+  const textEntries = gatherTexts(root);
+  const newElements = new Map();
+  for (const entry of textEntries) {
+    const parent = entry.node.parentElement;
+    if (!parent) continue;
+    if (!elementsToObserve.has(parent) && !newElements.has(parent)) {
+      newElements.set(parent, []);
+    }
+    const map = newElements.has(parent) ? newElements : elementsToObserve;
+    map.get(parent).push(entry);
+  }
+
+  for (const [el, entries] of newElements.entries()) {
+    elementsToObserve.set(el, entries);
+    if (pageTranslationObserver) {
+      pageTranslationObserver.observe(el);
+    }
+  }
+}
+
+async function translatePage(mode, sourceLang, targetLang) {
+  currentMode = mode;
+  currentSource = sourceLang;
+  currentTarget = targetLang;
   isTranslated = true;
-  return applied;
+
+  if (pageTranslationObserver) pageTranslationObserver.disconnect();
+  if (pageTranslationMutationObserver) pageTranslationMutationObserver.disconnect();
+  pendingPageTranslations.clear();
+  elementsToObserve.clear();
+
+  pageTranslationObserver = new IntersectionObserver((entries) => {
+    let triggered = false;
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        pageTranslationObserver.unobserve(el);
+        pendingPageTranslations.add(el);
+        triggered = true;
+      }
+    });
+    if (triggered) {
+      schedulePageTranslationBatch();
+    }
+  }, { rootMargin: '100% 0px 100% 0px' });
+
+  // Initial gather
+  observeNewNodes(document.body);
+
+  // Setup MutationObserver to catch dynamically loaded content
+  pageTranslationMutationObserver = new MutationObserver((mutations) => {
+    mutations.forEach(mutation => {
+      if (mutation.addedNodes.length > 0) {
+        mutation.addedNodes.forEach(node => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            observeNewNodes(node);
+          } else if (node.nodeType === Node.TEXT_NODE) {
+            if (node.parentElement) {
+               observeNewNodes(node.parentElement);
+            }
+          }
+        });
+      }
+    });
+  });
+  
+  pageTranslationMutationObserver.observe(document.body, { childList: true, subtree: true });
+
+  return 0; // Return immediately. Popup increments its global total by 1 for this activation.
 }
 
 // ── Bilingual mode ────────────────────────────────────
@@ -259,6 +351,21 @@ function applyBilingual(textNode, original, translated) {
 // ── Restore original text ─────────────────────────────
 
 function restorePage() {
+  if (pageTranslationObserver) {
+    pageTranslationObserver.disconnect();
+    pageTranslationObserver = null;
+  }
+  if (pageTranslationMutationObserver) {
+    pageTranslationMutationObserver.disconnect();
+    pageTranslationMutationObserver = null;
+  }
+  if (pageTranslateTimeout) {
+    clearTimeout(pageTranslateTimeout);
+    pageTranslateTimeout = null;
+  }
+  pendingPageTranslations.clear();
+  elementsToObserve.clear();
+
   // 1. Restore text nodes modified in translate-only mode
   for (const [node, original] of originalMap.entries()) {
     if (node.parentNode) {
@@ -938,44 +1045,50 @@ function processOcrCrop(dataUrl, x, y, w, h) {
   const popupX = cx;
   const popupY = Math.max(10, cy - 150); // Shift up a bit, ensure it stays on screen
 
-  const popup = createOcrPopup(popupX, popupY);
-  popup.setContent('Loading OCR & Translation...', '');
-  
-  const img = new Image();
-  img.onload = () => {
-    const dpr = window.devicePixelRatio || 1;
-    const canvas = document.createElement('canvas');
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    const ctx = canvas.getContext('2d');
+  chrome.storage.local.get(['ocrOpacity', 'ocrBilingual'], (data) => {
+    const opacity = data.ocrOpacity || '1';
+    const isBilingual = data.ocrBilingual !== 'off';
+    const popup = createOcrPopup(popupX, popupY, opacity, isBilingual);
+    popup.setContent('Loading OCR & Translation...', '');
     
-    ctx.drawImage(img, x * dpr, y * dpr, w * dpr, h * dpr, 0, 0, w * dpr, h * dpr);
-    const croppedDataUrl = canvas.toDataURL('image/png');
-    
-    chrome.runtime.sendMessage({ type: 'process_ocr', imageData: croppedDataUrl }, (response) => {
-      if (response && response.success) {
-        if (!response.text) {
-          popup.setContent('No text found in selection.', '');
+    const img = new Image();
+    img.onload = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const canvas = document.createElement('canvas');
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      const ctx = canvas.getContext('2d');
+      
+      ctx.drawImage(img, x * dpr, y * dpr, w * dpr, h * dpr, 0, 0, w * dpr, h * dpr);
+      const croppedDataUrl = canvas.toDataURL('image/png');
+      
+      chrome.runtime.sendMessage({ type: 'process_ocr', imageData: croppedDataUrl }, (response) => {
+        if (response && response.success) {
+          if (!response.text) {
+            popup.setContent('No text found in selection.', '');
+          } else {
+            const transText = response.translation || 'Translation failed';
+            popup.setContent(isBilingual ? response.text : '', transText);
+            popup.setOriginalText(response.text);
+          }
         } else {
-          popup.setContent(response.text, response.translation || 'Translation failed');
-          popup.setOriginalText(response.text);
+          popup.setContent('OCR Error: ' + (response ? response.error : 'Unknown'), '');
         }
-      } else {
-        popup.setContent('OCR Error: ' + (response ? response.error : 'Unknown'), '');
-      }
-    });
+      });
   };
   img.src = dataUrl;
+  }); // Close chrome.storage.local.get callback
 }
 
-function createOcrPopup(x, y) {
+function createOcrPopup(x, y, initialOpacity = '1') {
   const popup = document.createElement('div');
   popup.className = 'ai-ocr-popup';
   Object.assign(popup.style, {
     position: 'fixed', left: Math.min(x, window.innerWidth - 300) + 'px', top: Math.min(y, window.innerHeight - 200) + 'px',
     width: '300px', backgroundColor: 'var(--ai-ocr-bg, #fff)', border: '1px solid var(--ai-ocr-border, #ccc)', borderRadius: '8px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: '2147483647', display: 'flex', flexDirection: 'column',
-    fontFamily: 'sans-serif', color: 'var(--ai-ocr-color, #333)', overflow: 'hidden', opacity: '1'
+    fontFamily: 'sans-serif', color: 'var(--ai-ocr-color, #333)', overflow: 'auto', opacity: initialOpacity, resize: 'both',
+    minWidth: '200px', minHeight: '100px'
   });
 
   // Header (Draggable)
@@ -995,25 +1108,12 @@ function createOcrPopup(x, y) {
   controls.style.alignItems = 'center';
   controls.style.gap = '8px';
   
-  const opacityInput = document.createElement('input');
-  opacityInput.type = 'range';
-  opacityInput.min = '0.2';
-  opacityInput.max = '1';
-  opacityInput.step = '0.1';
-  opacityInput.value = '1';
-  opacityInput.style.width = '60px';
-  opacityInput.title = 'Opacity';
-  opacityInput.addEventListener('input', (e) => {
-    popup.style.opacity = e.target.value;
-  });
-  
   const closeBtn = document.createElement('span');
   closeBtn.textContent = '✕';
   closeBtn.style.cursor = 'pointer';
   closeBtn.style.fontSize = '14px';
   closeBtn.onclick = () => popup.remove();
   
-  controls.appendChild(opacityInput);
   controls.appendChild(closeBtn);
   header.appendChild(title);
   header.appendChild(controls);
@@ -1070,7 +1170,7 @@ function createOcrPopup(x, y) {
   let isDragging = false;
   let dragStartX, dragStartY, initialLeft, initialTop;
   header.onmousedown = (e) => {
-    if (e.target === opacityInput || e.target === closeBtn) return;
+    if (e.target === closeBtn) return;
     isDragging = true;
     dragStartX = e.clientX;
     dragStartY = e.clientY;
@@ -1096,10 +1196,13 @@ function createOcrPopup(x, y) {
     }
   });
 
+
   return {
     setContent: (orig, trans) => {
       origDiv.textContent = orig;
+      origDiv.style.display = orig ? 'block' : 'none';
       transDiv.textContent = trans;
+      origSpeaker.style.display = orig ? 'inline' : 'none';
     },
     setOriginalText: (text) => {
       origTextForTTS = text;
