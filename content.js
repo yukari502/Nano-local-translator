@@ -1136,12 +1136,14 @@ function createOcrPopup(x, y, initialOpacity = '1', isBilingual = true, fontColo
   });
   
   const origDiv = document.createElement('div');
+  origDiv.className = 'ai-ocr-orig';
   origDiv.style.marginBottom = '8px';
   origDiv.style.color = fontColor;
   origDiv.style.opacity = '0.7';
   origDiv.style.fontSize = '12px';
   
   const transDiv = document.createElement('div');
+  transDiv.className = 'ai-ocr-trans';
   transDiv.style.fontWeight = '400';
   transDiv.style.color = fontColor;
 
@@ -1216,5 +1218,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     if (sendResponse) sendResponse({ ok: true });
     return true;
+  }
+});
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'ocr_progress') {
+    const p = request.progress;
+    if (!p) return;
+    const percent = Math.round((p.progress || 0) * 100);
+    let msg = '';
+    if (p.status === 'downloading tesseract core') msg = `Downloading Core Engine... ${percent}%`;
+    else if (p.status === 'downloading language model') msg = `Downloading OCR Model... ${percent}%`;
+    else return;
+
+    document.querySelectorAll('.ai-ocr-popup').forEach(popup => {
+       const origDiv = popup.querySelector('.ai-ocr-orig');
+       if (origDiv && (origDiv.textContent.includes('Loading') || origDiv.textContent.includes('Downloading'))) {
+         origDiv.textContent = msg;
+         origDiv.style.display = 'block';
+       }
+    });
   }
 });

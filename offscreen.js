@@ -31,18 +31,18 @@ async function initTesseract(sourceLang) {
     tesseractWorker = null;
   }
   
-  // Only eng and jpn are bundled locally
-  const isLocal = (tessLang === 'eng' || tessLang === 'jpn');
   const options = {
     workerPath: workerPath,
     corePath: corePath,
+    langPath: 'https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata@4.0.0', // High quality models
     gzip: true,
-    workerBlobURL: false
+    workerBlobURL: false,
+    logger: m => {
+      if (m.status === 'downloading language model' || m.status === 'downloading tesseract core') {
+        chrome.runtime.sendMessage({ action: 'ocr_progress', progress: m });
+      }
+    }
   };
-  
-  if (isLocal) {
-    options.langPath = langPath;
-  }
   
   tesseractWorker = await Tesseract.createWorker(tessLang, 1, options);
   currentWorkerLang = tessLang;
