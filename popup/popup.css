@@ -172,7 +172,7 @@ input:checked + .slider:before {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow: hidden;
+  overflow: visible;
   max-height: 800px;
   transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.3s ease-in-out;
   opacity: 1;
