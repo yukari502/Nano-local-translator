@@ -4,14 +4,14 @@ A privacy-focused, lightweight Chrome Extension that leverages Chrome's Built-in
 
 ## Features
 
-- **On-Device Translation**: Translates web pages seamlessly and securely on your device using Chrome's built-in Translator API.
+- **On-Device Translation**: Translates web pages seamlessly and securely on your device using Chrome's built-in Translator API. Features an **Auto Detect** option for source language detection using Chrome's built-in AI `LanguageDetector` API (with `chrome.i18n` fallback).
 - **YouTube Dual Subtitles**: Dynamically adds bilingual dual subtitles to YouTube videos with customizable colors, opacity, and positioning.
-- **Screenshot OCR Translate (Alt+S)**: Extract and translate text from screenshots anywhere on the page using a fully local Tesseract OCR engine. The resizable popup supports dark mode and can be freely dragged. *(Note: Currently bundles English `eng` and Japanese `jpn` language data for offline use)*.
+- **Screenshot Translate (Alt+S)**: Extract and translate text from screenshots anywhere on the page using a fully local Tesseract OCR engine. The resizable popup supports dark mode, dynamic color/opacity adjustments, and can be freely dragged. *(Note: Currently bundles English `eng` and Japanese `jpn` language data for offline use)*.
 - **Bilingual & Translate-Only Modes**: View both original and translated text side-by-side, or completely replace the text.
-- **Select-to-Translate & TTS**: Simply highlight text on any web page to get a quick translation, read it aloud using Chrome's TTS, or both in an adaptive floating tooltip.
+- **Select-to-Translate & TTS**: Simply highlight text on any web page to get a quick translation, read it aloud using Chrome's TTS (or automatically uses Google Translate TTS for maximum compatibility), or both in an adaptive floating tooltip.
 - **Hover Translate**: Instantly translate text simply by hovering your mouse cursor over it.
 - **Word Highlighting**: Highlights the currently spoken word dynamically during TTS playback.
-- **Multi-language UI**: The extension interface supports 9 languages dynamically (English, Chinese, Japanese, Spanish, French, German, Russian, Arabic).
+- **Multi-language UI**: The extension interface supports 9 languages dynamically (English, Chinese, Japanese, Spanish, French, German, Russian, Arabic). Features a settings panel with smooth collapsible sections and micro-animations.
 - **Adaptive Dark Mode**: The UI and tooltips automatically adapt to your system's light or dark mode preferences.
 
 ## Requirements

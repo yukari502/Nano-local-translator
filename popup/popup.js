@@ -344,7 +344,9 @@ const ttsVolumeVal = $('ttsVolumeVal');
 // ── Populate language selects ─────────────────────────
 
 function populateLanguages() {
-  sourceLang.appendChild(new Option(i18n.autoDetect, 'auto'));
+  const autoOpt = new Option('Auto Detect', 'auto');
+  autoOpt.setAttribute('data-i18n', 'autoDetect');
+  sourceLang.appendChild(autoOpt);
   for (const [code, name] of LANGUAGES) {
     sourceLang.appendChild(new Option(name, code));
     targetLang.appendChild(new Option(name, code));

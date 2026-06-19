@@ -28,6 +28,7 @@ Nano local translator is a lightweight, privacy-focused Chrome extension that le
 ### 4.1 Web Page Translation Mechanism (DOM Traversal & Mutation)
 - **Text Extraction**: Uses `TreeWalker` in `content.js` to traverse the DOM, filtering out non-translatable tags (e.g., `SCRIPT`, `STYLE`, `CODE`) and hidden elements, collecting valid text nodes.
 - **Batch Processing**: Extracted texts are sent to `background.js` in chunks (currently set to 20) to prevent blocking requests or oversized data transfer.
+- **Auto-Detect Language**: Utilizes Chrome's built-in AI `LanguageDetector` API (with a stable `chrome.i18n` fallback) to seamlessly detect the source language on-the-fly when set to "Auto Detect".
 - **Execution**: `background.js` instantiates the translator via `Translator.create` and translates chunks iteratively using `translator.translate()`.
 - **DOM Mutation (Modes)**:
   - **Translate Only**: Modifies the `textContent` of nodes directly. Uses a `Map` (`originalMap`) to store original text for restoration.
@@ -38,8 +39,8 @@ Nano local translator is a lightweight, privacy-focused Chrome extension that le
 - **Hover Translation**: `content.js` uses `mousemove` to detect when a user hovers over a word for 300ms. It isolates the hovered word using DOM ranges and displays its translation.
 - **Tooltip UI**: Dynamically creates a DOM element positioned near the cursor. Adapts to the system's dark/light mode automatically. Includes dedicated TTS speaker icons for both the original and translated text.
 - **TTS Integration**: 
-  - `background.js` uses `chrome.tts.speak` for audio playback.
-  - Automatically prefers high-quality Google TTS voices (if installed on the OS) for the target language, falling back to system default voices if unselected.
+  - `background.js` uses `chrome.tts.speak` for local audio playback when an appropriate voice is available.
+  - As a fallback for maximum compatibility, it utilizes the Google Translate TTS API via an `offscreen` document, automatically aligning with the target language for robust pronunciation without needing local voice packs.
 
 ### 4.3 YouTube Dual Subtitles
 - **Caption Interception**: Injects a `MutationObserver` in `content.js` specifically on YouTube pages to watch the `.ytp-caption-window-container` element.
@@ -63,9 +64,10 @@ Nano local translator is a lightweight, privacy-focused Chrome extension that le
   - TTS preferences (`ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`)
   - Translation usage statistics (`totalTranslates`)
 
-### 4.6 Internationalization (i18n)
+### 4.6 Internationalization (i18n) & UI
 - `popup.js` maintains an internal JavaScript dictionary (`I18N`) supporting multiple languages (en, zh, zh-Hant, ja, es, fr, de, ru, ar).
 - Dynamically updates text for DOM nodes tagged with `data-i18n` or `data-i18n-placeholder` based on user selection or browser language.
+- Features a clean, unified settings panel with collapsible sections and micro-animations for an improved user experience.
 
 ## 5. Key APIs & Dependencies
 - **Requirements**: Google Chrome version 138 or higher.
