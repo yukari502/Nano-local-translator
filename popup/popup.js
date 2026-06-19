@@ -402,8 +402,22 @@ async function init() {
   document.querySelectorAll('.section-label').forEach(label => {
     label.addEventListener('click', () => {
       const section = label.closest('.section');
-      if (section && section.querySelector('.section-content')) {
-        section.classList.toggle('collapsed');
+      if (section) {
+        const content = section.querySelector('.section-content');
+        if (content) {
+          if (section.classList.contains('collapsed')) {
+            section.classList.remove('collapsed');
+            content.style.overflow = 'hidden';
+            setTimeout(() => {
+              if (!section.classList.contains('collapsed')) {
+                content.style.overflow = 'visible';
+              }
+            }, 300);
+          } else {
+            content.style.overflow = 'hidden';
+            section.classList.add('collapsed');
+          }
+        }
       }
     });
   });
