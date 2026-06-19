@@ -1,18 +1,15 @@
 # Nano local translator
 
-A privacy-focused, lightweight Chrome Extension that leverages Chrome's Built-in Translator API to translate web pages locally on your device. No cloud services or external API keys are required.
+**Hi! I'm an amateur developer.** I built Nano Local Translator on a whim after discovering Chrome's new Built-in AI features. Since then, I've been constantly polishing the features and user experience based on my own daily usage. It's a fully open-source project, and I hope you like it! Feedback on GitHub is highly welcomed.
+
+Nano Local Translator is a lightning-fast, private web page translator powered entirely by Chrome's Built-in AI (Gemini Nano). It processes everything locally on your device—ensuring **maximum speed** (it’s genuinely fast!) and **100% privacy** since your data never leaves your machine.
 
 ## Features
 
-- **On-Device Translation**: Translates web pages seamlessly and securely on your device using Chrome's built-in Translator API. Features an **Auto Detect** option for source language detection using Chrome's built-in AI `LanguageDetector` API (with `chrome.i18n` fallback).
-- **YouTube Dual Subtitles**: Dynamically adds bilingual dual subtitles to YouTube videos with customizable colors, opacity, and positioning.
-- **Screenshot Translate (Alt+S)**: Extract and translate text from screenshots anywhere on the page using a fully local Tesseract OCR engine. The resizable popup supports dark mode, dynamic color/opacity adjustments, and can be freely dragged. *(Note: Currently bundles English `eng` and Japanese `jpn` language data for offline use)*.
-- **Bilingual & Translate-Only Modes**: View both original and translated text side-by-side, or completely replace the text.
-- **Select-to-Translate & TTS**: Simply highlight text on any web page to get a quick translation, read it aloud using Chrome's TTS (or automatically uses Google Translate TTS for maximum compatibility), or both in an adaptive floating tooltip.
-- **Hover Translate**: Instantly translate text simply by hovering your mouse cursor over it.
-- **Word Highlighting**: Highlights the currently spoken word dynamically during TTS playback.
-- **Multi-language UI**: The extension interface supports 9 languages dynamically (English, Chinese, Japanese, Spanish, French, German, Russian, Arabic). Features a settings panel with smooth collapsible sections and micro-animations.
-- **Adaptive Dark Mode**: The UI and tooltips automatically adapt to your system's light or dark mode preferences.
+- **Full Page & Highlight Translation**: Translate instantly with side-by-side bilingual reading.
+- **YouTube Dual Subs**: Seamlessly add bilingual dual subtitles to videos.
+- **Offline Screenshot Translate (Alt+S)**: Extract and translate text from any image using local OCR.
+- **AI Reading Assistant & Page Search (Experimental)**: Summarize pages, extract key points, or search through text using natural language.
 
 ## Requirements
 
