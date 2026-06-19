@@ -9,7 +9,6 @@ Nano Local Translator is a lightning-fast, private web page translator powered e
 - **Full Page & Highlight Translation**: Translate instantly with side-by-side bilingual reading.
 - **YouTube Dual Subs**: Seamlessly add bilingual dual subtitles to videos.
 - **Offline Screenshot Translate (Alt+S)**: Extract and translate text from any image using local OCR.
-- **AI Reading Assistant & Page Search (Experimental)**: Summarize pages, extract key points, or search through text using natural language.
 
 ## Requirements
 
