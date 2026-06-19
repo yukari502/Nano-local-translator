@@ -1155,10 +1155,13 @@ function createOcrPopup(x, y, initialOpacity = '1', isBilingual = true, fontColo
   popup.onmousedown = (e) => {
     if (e.target === closeBtn) return;
     
-    // Prevent drag if clicking near the bottom-right corner (resize handle)
+    // Prevent drag if clicking near the bottom-right corner (resize handle) or scrollbars
     const rect = popup.getBoundingClientRect();
-    if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) {
-      return;
+    if (e.clientX > rect.right - 30 && e.clientY > rect.bottom - 30) {
+      return; // Bottom-right corner (resize handle)
+    }
+    if (e.clientX > rect.right - 16 || e.clientY > rect.bottom - 16) {
+      return; // Scrollbars
     }
     
     isDragging = true;

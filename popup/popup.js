@@ -16,6 +16,7 @@ const LANGUAGES = [
 const I18N = {
   en: {
     appTitle: "Nano local translator",
+    autoDetect: "Auto Detect",
     tabTranslate: "Translate", backBtn: "Back",
     sourceLang: "Source Language", targetLang: "Target Language", displayMode: "Display Mode",
     translateOnly: "Translate Only", bilingual: "Bilingual",
@@ -46,6 +47,7 @@ const I18N = {
   },
   zh: {
     appTitle: "Nano local translator",
+    autoDetect: "自动检测",
     tabTranslate: "翻译", backBtn: "返回",
     sourceLang: "源语言", targetLang: "目标语言", displayMode: "显示模式",
     translateOnly: "仅翻译", bilingual: "双语对照",
@@ -76,6 +78,7 @@ const I18N = {
   },
   'zh-Hant': {
     appTitle: "Nano local translator",
+    autoDetect: "自動檢測",
     tabTranslate: "翻譯", backBtn: "返回",
     sourceLang: "來源語言", targetLang: "目標語言", displayMode: "顯示模式",
     translateOnly: "僅翻譯", bilingual: "雙語對照",
@@ -106,6 +109,7 @@ const I18N = {
   },
   ja: {
     appTitle: "Nano local translator",
+    autoDetect: "自動検出",
     tabTranslate: "翻訳", backBtn: "戻る",
     sourceLang: "翻訳元", targetLang: "翻訳先", displayMode: "表示モード",
     translateOnly: "翻訳のみ", bilingual: "2言語表示",
@@ -134,6 +138,7 @@ const I18N = {
   },
   es: {
     appTitle: "Nano local translator",
+    autoDetect: "Detección automática",
     tabTranslate: "Traducir", backBtn: "Atrás",
     sourceLang: "Idioma de origen", targetLang: "Idioma de destino", displayMode: "Modo de visualización",
     translateOnly: "Solo traducir", bilingual: "Bilingüe",
@@ -164,6 +169,7 @@ const I18N = {
   },
   fr: {
     appTitle: "Nano local translator",
+    autoDetect: "Détection automatique",
     tabTranslate: "Traduire", backBtn: "Retour",
     sourceLang: "Langue source", targetLang: "Langue cible", displayMode: "Mode d'affichage",
     translateOnly: "Traduire uniquement", bilingual: "Bilingue",
@@ -194,6 +200,7 @@ const I18N = {
   },
   de: {
     appTitle: "Nano local translator",
+    autoDetect: "Automatische Erkennung",
     tabTranslate: "Übersetzen", backBtn: "Zurück",
     sourceLang: "Ausgangssprache", targetLang: "Zielsprache", displayMode: "Anzeigemodus",
     translateOnly: "Nur übersetzen", bilingual: "Zweisprachig",
@@ -224,6 +231,7 @@ const I18N = {
   },
   ru: {
     appTitle: "Nano local translator",
+    autoDetect: "Автоопределение",
     tabTranslate: "Перевод", backBtn: "Назад",
     sourceLang: "Исходный язык", targetLang: "Целевой язык", displayMode: "Режим отображения",
     translateOnly: "Только перевод", bilingual: "Двуязычный",
@@ -254,6 +262,7 @@ const I18N = {
   },
   ar: {
     appTitle: "Nano local translator",
+    autoDetect: "اكتشاف تلقائي",
     tabTranslate: "ترجمة", backBtn: "عودة",
     sourceLang: "اللغة المصدر", targetLang: "اللغة الهدف", displayMode: "وضع العرض",
     translateOnly: "ترجمة فقط", bilingual: "ثنائي اللغة",
@@ -335,6 +344,7 @@ const ttsVolumeVal = $('ttsVolumeVal');
 // ── Populate language selects ─────────────────────────
 
 function populateLanguages() {
+  sourceLang.appendChild(new Option(i18n.autoDetect, 'auto'));
   for (const [code, name] of LANGUAGES) {
     sourceLang.appendChild(new Option(name, code));
     targetLang.appendChild(new Option(name, code));
