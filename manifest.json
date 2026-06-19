@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Nano local translator",
-  "version": "1.1.2",
-  "description": "Open-source, local AI web translator with bilingual support, powered by Chrome's built-in AI — no external services required",
+  "name": "Nano local translator -YouTube dual subs",
+  "version": "1.2.0",
+  "description": "Open-source local AI web translator with bilingual support, hover translation, and YouTube Dual Subtitles, powered by Chrome's built-in AI",
   "permissions": [
     "storage",
     "activeTab",

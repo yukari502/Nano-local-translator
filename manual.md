@@ -33,31 +33,37 @@ Nano local translator is a lightweight, privacy-focused Chrome extension that le
   - **Translate Only**: Modifies the `textContent` of nodes directly. Uses a `Map` (`originalMap`) to store original text for restoration.
   - **Bilingual**: Replaces original text nodes with a `span.ai-pair` element containing both original and translated text side-by-side.
 
-### 4.2 Select-to-Translate & TTS (Text-to-Speech)
-- **Event Listeners**: `content.js` listens to the `mouseup` event to capture user-selected text (`window.getSelection()`).
-- **Tooltip UI**: Dynamically creates a DOM element positioned near the cursor. Adapts to the system's dark/light mode automatically.
+### 4.2 Select-to-Translate, Hover Translation & TTS
+- **Select-to-Translate**: `content.js` listens to the `mouseup` event to capture user-selected text (`window.getSelection()`).
+- **Hover Translation**: `content.js` uses `mousemove` to detect when a user hovers over a word for 300ms. It isolates the hovered word using DOM ranges and displays its translation.
+- **Tooltip UI**: Dynamically creates a DOM element positioned near the cursor. Adapts to the system's dark/light mode automatically. Includes dedicated TTS speaker icons for both the original and translated text.
 - **TTS Integration**: 
   - `background.js` uses `chrome.tts.speak` for audio playback.
-  - Listens to TTS events (like `word` events) and sends the current character index back to `content.js`.
-  - `content.js` highlights the currently spoken word using `<span class="tts-word-highlight">` based on the character index.
+  - Automatically prefers high-quality Google TTS voices (if installed on the OS) for the target language, falling back to system default voices if unselected.
 
-### 4.3 Caching Mechanism
+### 4.3 YouTube Dual Subtitles
+- **Caption Interception**: Injects a `MutationObserver` in `content.js` specifically on YouTube pages to watch the `.ytp-caption-window-container` element.
+- **Dynamic Injection**: Automatically intercepts native subtitles (Closed Captions) as they appear, translates them via the background script, and dynamically injects `.ai-yt-sub` spans.
+- **Customization**: Supports extensive user customization for the injected subtitles, including color inheritance mode (Original vs Custom), text opacity, and vertical placement (Above vs Below original).
+
+### 4.4 Caching Mechanism
 - **Design**: Implements an in-memory LRU (Least Recently Used) cache in `background.js`.
 - **Purpose**: Reduces redundant API calls to the built-in AI, speeding up translation.
 - **Implementation**: Stores translations in a `Map` with a maximum capacity (`CACHE_MAX = 5000`). Cache keys consist of source language, target language, and original text. Can be toggled off in settings.
 
-### 4.4 State Management & Persistence
+### 4.5 State Management & Persistence
 - **API**: Utilizes `chrome.storage.local` to persist user preferences.
 - **Stored Data**: 
   - Extension toggle (`isEnabled`)
   - UI Language (`uiLang`)
   - Translation languages (`sourceLang`, `targetLang`)
   - Display mode (`mode`: `translate-only` / `bilingual`)
-  - Select-to-translate toggles (`s2tTranslate`, `s2tSpeak`)
+  - Select-to-translate & Hover toggles (`s2tTranslate`, `hoverTranslate`)
+  - YouTube Subtitles configuration (`youtubeDualSubs`, `ytSubColorMode`, `ytSubColor`, `ytSubOpacity`, `ytSubPosition`)
   - TTS preferences (`ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`)
   - Translation usage statistics (`totalTranslates`)
 
-### 4.5 Internationalization (i18n)
+### 4.6 Internationalization (i18n)
 - `popup.js` maintains an internal JavaScript dictionary (`I18N`) supporting multiple languages (en, zh, zh-Hant, ja, es, fr, de, ru, ar).
 - Dynamically updates text for DOM nodes tagged with `data-i18n` or `data-i18n-placeholder` based on user selection or browser language.
 

@@ -740,15 +740,12 @@ function initYoutubeObserver() {
     span.className = 'ai-yt-sub';
     span.textContent = translatedText;
     if (ytSubConfig.colorMode === 'inherit') {
-      span.style.color = 'inherit';
+      span.style.color = '';
     } else {
       span.style.color = ytSubConfig.color;
     }
     span.style.opacity = ytSubConfig.opacity;
     span.style.fontSize = '0.9em';
-    span.style.display = 'block';
-    span.style.marginTop = ytSubConfig.position === 'below' ? '2px' : '0px';
-    span.style.marginBottom = ytSubConfig.position === 'above' ? '2px' : '0px';
     
     const br = document.createElement('br');
     br.className = 'ai-yt-sub-br';
@@ -779,21 +776,50 @@ function initYoutubeObserver() {
       youtubeDualSubsEnabled = (changes.youtubeDualSubs.newValue === 'on');
       if (youtubeDualSubsEnabled) startObserving();
     }
+    const updateExistingSubs = () => {
+      document.querySelectorAll('.ai-yt-sub').forEach(span => {
+        if (ytSubConfig.colorMode === 'inherit') {
+          span.style.color = '';
+        } else {
+          span.style.color = ytSubConfig.color;
+        }
+        span.style.opacity = ytSubConfig.opacity;
+        
+        if (changes.ytSubPosition) {
+           const segment = span.parentElement;
+           const br = segment ? segment.querySelector('.ai-yt-sub-br') : null;
+           if (segment && br) {
+             if (ytSubConfig.position === 'above') {
+               segment.insertBefore(br, segment.firstChild);
+               segment.insertBefore(span, br);
+             } else {
+               segment.appendChild(br);
+               segment.appendChild(span);
+             }
+           }
+        }
+      });
+    };
+
     if (changes.ytSubColorMode) {
       ytSubConfig.colorMode = changes.ytSubColorMode.newValue;
       translatedCache.clear();
+      updateExistingSubs();
     }
     if (changes.ytSubColor) {
       ytSubConfig.color = changes.ytSubColor.newValue;
       translatedCache.clear();
+      updateExistingSubs();
     }
     if (changes.ytSubOpacity) {
       ytSubConfig.opacity = changes.ytSubOpacity.newValue;
       translatedCache.clear();
+      updateExistingSubs();
     }
     if (changes.ytSubPosition) {
       ytSubConfig.position = changes.ytSubPosition.newValue;
       translatedCache.clear();
+      updateExistingSubs();
     }
   });
 
