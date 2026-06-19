@@ -206,13 +206,49 @@ async function handleTranslate({ texts, sourceLang, targetLang }) {
   const data = await chrome.storage.local.get(['useCache']);
   const useCache = data.useCache !== false; // true by default
 
+  let actualSourceLang = sourceLang;
+  if (sourceLang === 'auto' && texts.length > 0) {
+    let detected = null;
+    if (typeof LanguageDetector !== 'undefined' && LanguageDetector.create) {
+      try {
+        const detector = await LanguageDetector.create();
+        const results = await detector.detect(texts[0]);
+        if (results && results.length > 0) {
+          detected = results[0].detectedLanguage.split('-')[0];
+        }
+      } catch (e) { console.warn("LanguageDetector failed", e); }
+    } else if (typeof translation !== 'undefined' && translation.createDetector) {
+      try {
+        const detector = await translation.createDetector();
+        const results = await detector.detect(texts[0]);
+        if (results && results.length > 0) {
+          detected = results[0].detectedLanguage.split('-')[0];
+        }
+      } catch (e) { console.warn("translation.createDetector failed", e); }
+    }
+    
+    if (!detected) {
+      detected = await new Promise(resolve => {
+        if (chrome.i18n && chrome.i18n.detectLanguage) {
+          chrome.i18n.detectLanguage(texts[0], (res) => {
+            if (res && res.languages && res.languages.length > 0) resolve(res.languages[0].language.split('-')[0]);
+            else resolve('en');
+          });
+        } else {
+          resolve('en');
+        }
+      });
+    }
+    actualSourceLang = detected || 'en';
+  }
+
   const results = {};
   const batch = [];
 
   // 分离缓存命中与未命中
   for (const text of texts) {
     if (useCache) {
-      const key = cacheKey(sourceLang, targetLang, text);
+      const key = cacheKey(actualSourceLang, targetLang, text);
       const cached = cacheGet(key);
       if (cached !== undefined) {
         results[text] = cached;
@@ -236,7 +272,7 @@ async function handleTranslate({ texts, sourceLang, targetLang }) {
 
   // 创建翻译器（首次会触发模型下载）
   const translator = await Translator.create({
-    sourceLanguage: sourceLang,
+    sourceLanguage: actualSourceLang,
     targetLanguage: targetLang
   });
 
@@ -245,7 +281,7 @@ async function handleTranslate({ texts, sourceLang, targetLang }) {
     try {
       const translated = await translator.translate(text);
       if (useCache) {
-        const key = cacheKey(sourceLang, targetLang, text);
+        const key = cacheKey(actualSourceLang, targetLang, text);
         cacheSet(key, translated);
       }
       results[text] = translated;
