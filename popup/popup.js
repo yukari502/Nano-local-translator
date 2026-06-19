@@ -27,7 +27,7 @@ const I18N = {
     shortcutTip: "Shortcut: Alt+T (Mac: ⌥+T) to toggle.", shortcutChange: "To change, visit",
     selectToTranslateTitle: "Select/Hover Translation", selectToTranslateLabel: "Status",
     s2tTranslate: "Select Translation", hoverTranslate: "Hover Translation", youtubeDualSubs: "YouTube Dual Subs", s2tSpeak: "Speak Aloud (TTS)",
-    optionalFeaturesTitle: "Optional Features", ocrTranslateTitle: "Screenshot Translate (Alt+S)", closeAllOcrBtn: "Close All Popups", ocrAutoClose: "Auto-close (s)",
+    optionalFeaturesTitle: "Optional Features", ocrTranslateTitle: "Screenshot Translate (Alt+S)", ocrDownloadInfo: "Requires downloading models (~15MB) on first use", closeAllOcrBtn: "Close All Popups", ocrAutoClose: "Auto-close (s)",
     youtubeSettingsTitle: "YouTube dual subs settings", ytSubColorMode: "Color Mode", ytSubColorCustom: "Custom", ytSubColorInherit: "Original", ytSubColor: "Custom Color", ytSubOpacity: "Opacity", ytSubPosition: "Position (Translation)", ytSubBelow: "Below Original", ytSubAbove: "Above Original",
     statusOff: "Off", statusOn: "On", shortcutSettings: "Shortcuts",
     fullPageShortcut: "Full Page Translation", editShortcuts: "Edit (Alt+T)",
@@ -58,7 +58,7 @@ const I18N = {
     shortcutTip: "快捷键：Alt+T (Mac: ⌥+T) 切换翻译", shortcutChange: "修改快捷键请访问",
     selectToTranslateTitle: "划词/悬停翻译", selectToTranslateLabel: "状态",
     s2tTranslate: "划词翻译", hoverTranslate: "悬停选词翻译", youtubeDualSubs: "YouTube双语字幕", s2tSpeak: "划词朗读 (TTS)",
-    optionalFeaturesTitle: "可选功能", ocrTranslateTitle: "截屏翻译 (Alt+S)", closeAllOcrBtn: "关闭所有弹窗", ocrAutoClose: "自动关闭 (秒)",
+    optionalFeaturesTitle: "可选功能", ocrTranslateTitle: "截屏翻译 (Alt+S)", ocrDownloadInfo: "初次使用需下载识别模型（约15MB），以后可离线使用", closeAllOcrBtn: "关闭所有弹窗", ocrAutoClose: "自动关闭 (秒)",
     youtubeSettingsTitle: "YouTube 双语字幕设置", ytSubColorMode: "颜色模式", ytSubColorCustom: "自定义", ytSubColorInherit: "跟随原文", ytSubColor: "自定义颜色", ytSubOpacity: "透明度", ytSubPosition: "翻译位置", ytSubBelow: "在原文下方", ytSubAbove: "在原文上方",
     statusOff: "关闭", statusOn: "开启", shortcutSettings: "快捷键设置",
     fullPageShortcut: "全文翻译快捷键", editShortcuts: "编辑 (Alt+T)",
@@ -89,7 +89,7 @@ const I18N = {
     shortcutTip: "快捷鍵：Alt+T (Mac: ⌥+T) 切換翻譯", shortcutChange: "修改快捷鍵請訪問",
     selectToTranslateTitle: "劃詞/懸停翻譯", selectToTranslateLabel: "狀態",
     s2tTranslate: "劃詞翻譯", hoverTranslate: "懸停選詞翻譯", youtubeDualSubs: "YouTube雙語字幕", s2tSpeak: "劃詞朗讀 (TTS)",
-    optionalFeaturesTitle: "可選功能", ocrTranslateTitle: "截屏翻譯 (Alt+S)", closeAllOcrBtn: "關閉所有彈窗", ocrAutoClose: "自動關閉 (秒)",
+    optionalFeaturesTitle: "可選功能", ocrTranslateTitle: "截屏翻譯 (Alt+S)", ocrDownloadInfo: "初次使用需下載識別模型（約15MB），以後可離線使用", closeAllOcrBtn: "關閉所有彈窗", ocrAutoClose: "自動關閉 (秒)",
     youtubeSettingsTitle: "YouTube 雙語字幕設置", ytSubColorMode: "顏色模式", ytSubColorCustom: "自定義", ytSubColorInherit: "跟隨原文", ytSubColor: "自定義顏色", ytSubOpacity: "透明度", ytSubPosition: "翻譯位置", ytSubBelow: "在原文下方", ytSubAbove: "在原文上方",
     statusOff: "關閉", statusOn: "開啟", shortcutSettings: "快捷鍵設置",
     fullPageShortcut: "全文翻譯快捷鍵", editShortcuts: "編輯 (Alt+T)",
@@ -735,6 +735,15 @@ function applyI18n(lang) {
       el.setAttribute('placeholder', pDict[key]);
     } else if (enPDict[key]) {
       el.setAttribute('placeholder', enPDict[key]);
+    }
+  });
+
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    if (dict[key]) {
+      el.setAttribute('title', dict[key]);
+    } else if (enDict[key]) {
+      el.setAttribute('title', enDict[key]);
     }
   });
 }
