@@ -64,4 +64,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     })();
     return true; // Keep message channel open for async response
   }
+  
+  if (request.action === "play_audio") {
+    if (window.currentAudio) {
+      window.currentAudio.pause();
+    }
+    window.currentAudio = new Audio(request.url);
+    window.currentAudio.play().catch(e => console.error("Audio playback failed", e));
+    sendResponse({ ok: true });
+    return true;
+  }
+  
+  if (request.action === "stop_audio") {
+    if (window.currentAudio) {
+      window.currentAudio.pause();
+      window.currentAudio = null;
+    }
+    sendResponse({ ok: true });
+    return true;
+  }
 });

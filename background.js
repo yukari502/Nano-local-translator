@@ -49,6 +49,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   if (request.type === 'stopSpeak') {
     chrome.tts.stop();
+    chrome.runtime.sendMessage({ action: 'stop_audio' }).catch(() => {});
     sendResponse({ ok: true });
     return true;
   }
@@ -91,8 +92,8 @@ async function setupOffscreenDocument() {
   } else {
     creatingOffscreen = chrome.offscreen.createDocument({
       url: path,
-      reasons: [chrome.offscreen.Reason.WORKERS],
-      justification: 'Run Tesseract OCR worker'
+      reasons: [chrome.offscreen.Reason.WORKERS, chrome.offscreen.Reason.AUDIO_PLAYBACK],
+      justification: 'Run Tesseract OCR worker and play TTS audio'
     });
     await creatingOffscreen;
     creatingOffscreen = null;
@@ -289,20 +290,13 @@ async function handleSpeak({ text, lang }) {
   
   if (data.ttsVoice) {
     options.voiceName = data.ttsVoice;
+    chrome.tts.speak(text, options);
   } else {
-    const voices = await new Promise(resolve => chrome.tts.getVoices(resolve));
-    const targetPrefix = lang.split('-')[0].toLowerCase();
-    const googleVoice = voices.find(v => {
-      return (v.voiceName || '').toLowerCase().includes('google') && 
-             (v.lang || '').toLowerCase().startsWith(targetPrefix);
-    });
-    if (googleVoice) {
-      options.voiceName = googleVoice.voiceName;
-    } else {
-      options.lang = lang;
-    }
+    // Default to Google Translate TTS API via offscreen document
+    await setupOffscreenDocument();
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
+    chrome.runtime.sendMessage({ action: 'play_audio', url: url });
   }
 
-  chrome.tts.speak(text, options);
   return { ok: true };
 }
