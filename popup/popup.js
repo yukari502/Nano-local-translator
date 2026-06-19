@@ -311,6 +311,11 @@ const backBtn = $('backBtn');
 const s2tTranslateSwitch = $('s2tTranslateSwitch');
 const hoverTranslateSwitch = $('hoverTranslateSwitch');
 const youtubeDualSubsSwitch = $('youtubeDualSubsSwitch');
+const ocrTranslateSwitch = $('ocrTranslateSwitch');
+const ocrAutoCloseSwitch = $('ocrAutoCloseSwitch');
+const ocrSettingsContainer = $('ocrSettingsContainer');
+const closeAllOcrBtn = $('closeAllOcrBtn');
+
 const ytSubColorMode = $('ytSubColorMode');
 const ytSubColorField = $('ytSubColorField');
 const ytSubColor = $('ytSubColor');
@@ -397,7 +402,7 @@ async function init() {
   await checkTranslatorApi();
   const saved = await chrome.storage.local.get([
     'isEnabled', 'uiLang', 'sourceLang', 'targetLang', 'mode', 
-    's2tTranslate', 'hoverTranslate', 'youtubeDualSubs', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition', 'useCache', 'totalTranslates', 'hideWelcome', 'selectToTranslate',
+    's2tTranslate', 'hoverTranslate', 'youtubeDualSubs', 'ocrTranslate', 'ocrAutoClose', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition', 'useCache', 'totalTranslates', 'hideWelcome', 'selectToTranslate',
     'ttsVoice', 'ttsRate', 'ttsPitch', 'ttsVolume'
   ]);
   
@@ -435,6 +440,13 @@ async function init() {
   s2tTranslateSwitch.checked = (s2tTrans === 'on');
   hoverTranslateSwitch.checked = (saved.hoverTranslate === 'on');
   youtubeDualSubsSwitch.checked = (saved.youtubeDualSubs === 'on');
+  
+  if (ocrTranslateSwitch) ocrTranslateSwitch.checked = (saved.ocrTranslate === 'on');
+  if (ocrAutoCloseSwitch) ocrAutoCloseSwitch.checked = (saved.ocrAutoClose === 'on');
+  if (ocrSettingsContainer) ocrSettingsContainer.style.display = (saved.ocrTranslate === 'on') ? 'flex' : 'none';
+  
+  // Call the sorting once on load (no animation)
+  setTimeout(() => sortFeatures(false), 50);
   
   if (saved.ytSubColorMode) ytSubColorMode.value = saved.ytSubColorMode;
   ytSubColorField.style.display = ytSubColorMode.value === 'inherit' ? 'none' : 'flex';
@@ -497,17 +509,52 @@ async function init() {
   s2tTranslateSwitch.addEventListener('change', async (e) => {
     const val = e.target.checked ? 'on' : 'off';
     await chrome.storage.local.set({ s2tTranslate: val });
+    setTimeout(() => sortFeatures(true), 500);
   });
 
   hoverTranslateSwitch.addEventListener('change', async (e) => {
     const val = e.target.checked ? 'on' : 'off';
     await chrome.storage.local.set({ hoverTranslate: val });
+    setTimeout(() => sortFeatures(true), 500);
   });
 
   youtubeDualSubsSwitch.addEventListener('change', async (e) => {
     const val = e.target.checked ? 'on' : 'off';
     await chrome.storage.local.set({ youtubeDualSubs: val });
+    setTimeout(() => sortFeatures(true), 500);
   });
+  
+  if (ocrTranslateSwitch) {
+    ocrTranslateSwitch.addEventListener('change', async (e) => {
+      const val = e.target.checked ? 'on' : 'off';
+      await chrome.storage.local.set({ ocrTranslate: val });
+      if (ocrSettingsContainer) ocrSettingsContainer.style.display = e.target.checked ? 'flex' : 'none';
+      setTimeout(() => sortFeatures(true), 500);
+    });
+  }
+
+  if (ocrAutoCloseSwitch) {
+    ocrAutoCloseSwitch.addEventListener('change', async (e) => {
+      const val = e.target.checked ? 'on' : 'off';
+      await chrome.storage.local.set({ ocrAutoClose: val });
+    });
+  }
+  
+  if (closeAllOcrBtn) {
+    closeAllOcrBtn.addEventListener('click', async () => {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "close_all_ocr" });
+      }
+    });
+  }
+
+  const testOcrBtn = $('testOcrBtn');
+  if (testOcrBtn) {
+    testOcrBtn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ action: 'test_capture' });
+    });
+  }
 
   ytSubColorMode.addEventListener('change', async (e) => {
     ytSubColorField.style.display = e.target.value === 'inherit' ? 'none' : 'flex';
@@ -549,6 +596,67 @@ async function init() {
       });
     }
   }
+
+  // Debug Logs logic
+  const debugLogArea = $('debugLogArea');
+  const clearDebugBtn = $('clearDebugBtn');
+  if (debugLogArea && clearDebugBtn) {
+    const updateDebugLogs = async () => {
+      const d = await chrome.storage.local.get(['debugLogs']);
+      if (d.debugLogs) {
+        debugLogArea.value = d.debugLogs.join('\n');
+        debugLogArea.scrollTop = debugLogArea.scrollHeight;
+      }
+    };
+    updateDebugLogs();
+    setInterval(updateDebugLogs, 1500); // refresh periodically
+    
+    clearDebugBtn.addEventListener('click', async () => {
+      await chrome.storage.local.set({ debugLogs: [] });
+      debugLogArea.value = '';
+    });
+  }
+}
+
+function sortFeatures(animate = true) {
+  const container = document.querySelector('.s2t-container');
+  if (!container) return;
+  const items = Array.from(container.querySelectorAll('.feature-item'));
+  
+  const originalOrder = new Map(items.map((item, i) => [item, i]));
+
+  items.sort((a, b) => {
+    const aChecked = a.querySelector('input[type="checkbox"]').checked;
+    const bChecked = b.querySelector('input[type="checkbox"]').checked;
+    if (aChecked === bChecked) {
+      return originalOrder.get(a) - originalOrder.get(b);
+    }
+    return aChecked ? -1 : 1;
+  });
+
+  if (!animate) {
+    items.forEach(item => container.appendChild(item));
+    return;
+  }
+  
+  const firstRects = items.map(item => item.getBoundingClientRect());
+  items.forEach(item => container.appendChild(item));
+  const lastRects = items.map(item => item.getBoundingClientRect());
+  
+  items.forEach((item, i) => {
+    const dy = firstRects[i].top - lastRects[i].top;
+    if (dy !== 0) {
+      item.style.transition = 'none';
+      item.style.transform = `translateY(${dy}px)`;
+    }
+  });
+
+  requestAnimationFrame(() => {
+    items.forEach(item => {
+      item.style.transition = 'transform 0.5s ease-in-out';
+      item.style.transform = '';
+    });
+  });
 }
 
 function updateEnableState() {
