@@ -6,7 +6,8 @@
   "permissions": [
     "storage",
     "activeTab",
-    "tts"
+    "tts",
+    "offscreen"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -40,6 +41,12 @@
         "default": "Alt+T"
       },
       "description": "Translate current page"
+    },
+    "capture-translate": {
+      "suggested_key": {
+        "default": "Alt+S"
+      },
+      "description": "Screenshot OCR Translate"
     }
   }
 }
