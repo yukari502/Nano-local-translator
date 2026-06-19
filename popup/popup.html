@@ -44,39 +44,62 @@
           </div>
         </div>
 
-        <div class="field mode-group" style="margin-top: 10px;">
-          <label data-i18n="selectToTranslateTitle">Select/Hover Translation</label>
-          <div class="s2t-container" style="display: flex; flex-direction: column; gap: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 13px;" data-i18n="s2tTranslate">Select Translation</span>
-              <label class="switch">
-                <input type="checkbox" id="s2tTranslateSwitch" checked>
-                <span class="slider round"></span>
-              </label>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 13px;" data-i18n="hoverTranslate">Hover Translation</span>
-              <label class="switch">
-                <input type="checkbox" id="hoverTranslateSwitch">
-                <span class="slider round"></span>
-              </label>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 13px;" data-i18n="youtubeDualSubs">YouTube Dual Subtitles</span>
-              <label class="switch">
-                <input type="checkbox" id="youtubeDualSubsSwitch">
-                <span class="slider round"></span>
-              </label>
-            </div>
-
-
-          </div>
-        </div>
       </div>
 
-      <div class="action-bar">
+      <div class="action-bar" style="margin-bottom: 15px;">
         <button id="translateBtn" class="btn-primary" data-i18n="translateBtn">Translate Page</button>
         <button id="restoreBtn" class="btn-secondary" disabled data-i18n="restoreBtn">Restore Original</button>
+      </div>
+
+      <div class="field mode-group" style="margin-top: 10px;">
+        <label data-i18n="optionalFeaturesTitle">Optional Features</label>
+        <div class="s2t-container" style="display: flex; flex-direction: column; gap: 8px; position: relative;">
+          
+          <div class="feature-item" id="item-s2tTranslate" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; transition: transform 0.3s ease;">
+            <span style="font-size: 13px;" data-i18n="s2tTranslate">Select Translation</span>
+            <label class="switch">
+              <input type="checkbox" id="s2tTranslateSwitch" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+          
+          <div class="feature-item" id="item-hoverTranslate" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; transition: transform 0.3s ease;">
+            <span style="font-size: 13px;" data-i18n="hoverTranslate">Hover Translation</span>
+            <label class="switch">
+              <input type="checkbox" id="hoverTranslateSwitch">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          
+          <div class="feature-item" id="item-youtubeDualSubs" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; transition: transform 0.3s ease;">
+            <span style="font-size: 13px;" data-i18n="youtubeDualSubs">YouTube Dual Subtitles</span>
+            <label class="switch">
+              <input type="checkbox" id="youtubeDualSubsSwitch">
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="feature-item" id="item-ocrTranslate" style="display: flex; flex-direction: column; padding: 4px 0; transition: transform 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 13px;" data-i18n="ocrTranslateTitle">Screenshot OCR (Alt+S)</span>
+              <label class="switch">
+                <input type="checkbox" id="ocrTranslateSwitch">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div id="ocrSettingsContainer" style="display: none; flex-direction: column; gap: 8px; margin-top: 8px; padding-left: 10px; border-left: 2px solid #ddd;">
+              <button id="closeAllOcrBtn" class="btn-secondary" style="font-size: 12px; padding: 4px;" data-i18n="closeAllOcrBtn">Close All Popups</button>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 12px;" data-i18n="ocrAutoClose">Auto-close (10s)</span>
+                <label class="switch" style="transform: scale(0.8);">
+                  <input type="checkbox" id="ocrAutoCloseSwitch">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
 
       <div class="tips shortcut-box">
