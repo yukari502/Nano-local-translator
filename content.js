@@ -1154,6 +1154,13 @@ function createOcrPopup(x, y, initialOpacity = '1', isBilingual = true, fontColo
   let dragStartX, dragStartY, initialLeft, initialTop;
   popup.onmousedown = (e) => {
     if (e.target === closeBtn) return;
+    
+    // Prevent drag if clicking near the bottom-right corner (resize handle)
+    const rect = popup.getBoundingClientRect();
+    if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) {
+      return;
+    }
+    
     isDragging = true;
     dragStartX = e.clientX;
     dragStartY = e.clientY;
