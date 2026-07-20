@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
   "permissions": [
@@ -17,6 +17,16 @@
     "service_worker": "background.js"
   },
   "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "js": [
+        "yt-interceptor.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
     {
       "matches": [
         "<all_urls>"
