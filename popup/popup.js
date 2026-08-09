@@ -29,6 +29,14 @@ const I18N = {
     s2tTranslate: "Select Translation", hoverTranslate: "Hover Translation", youtubeDualSubs: "YouTube Dual Subs", s2tSpeak: "Speak Aloud (TTS)",
     optionalFeaturesTitle: "Optional Features", ocrTranslateTitle: "Screenshot Translate (Alt+S)", ocrDownloadInfo: "Requires downloading models (~15MB) on first use", closeAllOcrBtn: "Close All Popups", ocrAutoClose: "Auto-close (s)",
     youtubeSettingsTitle: "YouTube dual subs settings", ytSubColorMode: "Color Mode", ytSubColorCustom: "Custom", ytSubColorInherit: "Original", ytSubColor: "Custom Color", ytSubOpacity: "Opacity", ytSubPosition: "Position (Translation)", ytSubBelow: "Below Original", ytSubAbove: "Above Original",
+    localSubTitle: "Local subtitle file", localSubEnable: "Show local subtitles", localSubLoad: "Load .srt / .vtt / .ass",
+    localSubIdle: "No file loaded. Open a YouTube video first.",
+    localSubClear: "Clear", localSubReload: "Re-apply",
+    localSubOffset: "Timing offset (s)", localSubOffsetHint: "Positive = delay subtitle · Negative = show earlier",
+    localSubStyleHint: "Style follows YouTube dual-sub settings above (color / opacity). On the video page, use the CC button in the player bar to load files quickly.",
+    localSubLoaded: "Loaded: {name} ({count} cues)", localSubNotYoutube: "Open a YouTube watch page first.",
+    localSubParseFail: "Could not parse this subtitle file.", localSubCleared: "Local subtitles cleared.",
+    localSubNeedFile: "Choose a subtitle file first.", localSubApplyOk: "Applied to current video.",
     statusOff: "Off", statusOn: "On", shortcutSettings: "Shortcuts",
     fullPageShortcut: "Full Page Translation", editShortcuts: "Edit (Alt+T)",
     translationSettings: "Translation Settings", cacheResults: "Cache Translation Results",
@@ -60,6 +68,14 @@ const I18N = {
     s2tTranslate: "划词翻译", hoverTranslate: "悬停选词翻译", youtubeDualSubs: "YouTube双语字幕", s2tSpeak: "划词朗读 (TTS)",
     optionalFeaturesTitle: "可选功能", ocrTranslateTitle: "截屏翻译 (Alt+S)", ocrDownloadInfo: "初次使用需下载识别模型（约15MB），以后可离线使用", closeAllOcrBtn: "关闭所有弹窗", ocrAutoClose: "自动关闭 (秒)",
     youtubeSettingsTitle: "YouTube 双语字幕设置", ytSubColorMode: "颜色模式", ytSubColorCustom: "自定义", ytSubColorInherit: "跟随原文", ytSubColor: "自定义颜色", ytSubOpacity: "透明度", ytSubPosition: "翻译位置", ytSubBelow: "在原文下方", ytSubAbove: "在原文上方",
+    localSubTitle: "本地字幕文件", localSubEnable: "显示本地字幕", localSubLoad: "加载 .srt / .vtt / .ass",
+    localSubIdle: "尚未加载。请先打开 YouTube 视频页。",
+    localSubClear: "清除", localSubReload: "重新应用",
+    localSubOffset: "时间轴偏移（秒）", localSubOffsetHint: "正数 = 字幕延后 · 负数 = 字幕提前",
+    localSubStyleHint: "样式跟随上方「YouTube 双语字幕设置」的颜色/透明度。也可在视频页播放器控制栏的 CC 按钮快速加载。",
+    localSubLoaded: "已加载：{name}（{count} 条）", localSubNotYoutube: "请先打开 YouTube 播放页。",
+    localSubParseFail: "无法解析该字幕文件。", localSubCleared: "已清除本地字幕。",
+    localSubNeedFile: "请先选择字幕文件。", localSubApplyOk: "已应用到当前视频。",
     statusOff: "关闭", statusOn: "开启", shortcutSettings: "快捷键设置",
     fullPageShortcut: "全文翻译快捷键", editShortcuts: "编辑 (Alt+T)",
     translationSettings: "翻译设置", cacheResults: "缓存翻译结果",
@@ -91,6 +107,14 @@ const I18N = {
     s2tTranslate: "劃詞翻譯", hoverTranslate: "懸停選詞翻譯", youtubeDualSubs: "YouTube雙語字幕", s2tSpeak: "劃詞朗讀 (TTS)",
     optionalFeaturesTitle: "可選功能", ocrTranslateTitle: "截屏翻譯 (Alt+S)", ocrDownloadInfo: "初次使用需下載識別模型（約15MB），以後可離線使用", closeAllOcrBtn: "關閉所有彈窗", ocrAutoClose: "自動關閉 (秒)",
     youtubeSettingsTitle: "YouTube 雙語字幕設置", ytSubColorMode: "顏色模式", ytSubColorCustom: "自定義", ytSubColorInherit: "跟隨原文", ytSubColor: "自定義顏色", ytSubOpacity: "透明度", ytSubPosition: "翻譯位置", ytSubBelow: "在原文下方", ytSubAbove: "在原文上方",
+    localSubTitle: "本地字幕檔", localSubEnable: "顯示本地字幕", localSubLoad: "載入 .srt / .vtt / .ass",
+    localSubIdle: "尚未載入。請先開啟 YouTube 影片頁。",
+    localSubClear: "清除", localSubReload: "重新套用",
+    localSubOffset: "時間軸偏移（秒）", localSubOffsetHint: "正數 = 字幕延後 · 負數 = 字幕提前",
+    localSubStyleHint: "樣式跟隨上方「YouTube 雙語字幕設置」的顏色/透明度。也可在影片頁播放器控制列的 CC 按鈕快速載入。",
+    localSubLoaded: "已載入：{name}（{count} 條）", localSubNotYoutube: "請先開啟 YouTube 播放頁。",
+    localSubParseFail: "無法解析此字幕檔。", localSubCleared: "已清除本地字幕。",
+    localSubNeedFile: "請先選擇字幕檔。", localSubApplyOk: "已套用至目前影片。",
     statusOff: "關閉", statusOn: "開啟", shortcutSettings: "快捷鍵設置",
     fullPageShortcut: "全文翻譯快捷鍵", editShortcuts: "編輯 (Alt+T)",
     translationSettings: "翻譯設置", cacheResults: "緩存翻譯結果",
@@ -332,6 +356,21 @@ const ytSubOpacity = $('ytSubOpacity');
 const ytSubOpacityVal = $('ytSubOpacityVal');
 const ytSubPosition = $('ytSubPosition');
 
+// Local subtitle file elements
+const localSubEnableSwitch = $('localSubEnableSwitch');
+const localSubFileInput = $('localSubFileInput');
+const localSubStatus = $('localSubStatus');
+const localSubClearBtn = $('localSubClearBtn');
+const localSubReloadBtn = $('localSubReloadBtn');
+const localSubOffsetSlider = $('localSubOffsetSlider');
+const localSubOffsetVal = $('localSubOffsetVal');
+const localSubOffsetMinus = $('localSubOffsetMinus');
+const localSubOffsetPlus = $('localSubOffsetPlus');
+
+// Keep last loaded file in popup memory for re-apply (not persisted — can be large)
+let lastLocalSubContent = null;
+let lastLocalSubFileName = '';
+
 // TTS elements
 const ttsVoiceSelect = $('ttsVoiceSelect');
 const ttsRate = $('ttsRateSlider');
@@ -438,7 +477,8 @@ async function init() {
   const saved = await chrome.storage.local.get([
     'isEnabled', 'uiLang', 'sourceLang', 'targetLang', 'mode', 
     's2tTranslate', 'hoverTranslate', 'youtubeDualSubs', 'ocrTranslate', 'ocrAutoClose', 'ocrAutoCloseTime', 'ocrFontColor', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition', 'useCache', 'totalTranslates', 'hideWelcome', 'selectToTranslate',
-    'ttsVoice', 'ttsRate', 'ttsPitch', 'ttsVolume'
+    'ttsVoice', 'ttsRate', 'ttsPitch', 'ttsVolume',
+    'ytLocalSubOffset', 'ytLocalSubEnabled'
   ]);
   
   if (saved.totalTranslates) {
@@ -503,6 +543,15 @@ async function init() {
     if (ytSubOpacityVal) ytSubOpacityVal.textContent = saved.ytSubOpacity;
   }
   if (saved.ytSubPosition) ytSubPosition.value = saved.ytSubPosition;
+
+  // Local subtitle prefs
+  if (localSubEnableSwitch) {
+    localSubEnableSwitch.checked = saved.ytLocalSubEnabled !== 'off';
+  }
+  if (localSubOffsetSlider && saved.ytLocalSubOffset !== undefined) {
+    localSubOffsetSlider.value = saved.ytLocalSubOffset;
+    if (localSubOffsetVal) localSubOffsetVal.textContent = Number(saved.ytLocalSubOffset).toFixed(1);
+  }
 
   if (saved.useCache !== undefined) useCacheSwitch.checked = saved.useCache;
   
@@ -644,6 +693,145 @@ async function init() {
   ytSubPosition.addEventListener('change', async (e) => {
     await chrome.storage.local.set({ ytSubPosition: e.target.value });
   });
+
+  // ── Local subtitle file controls ────────────────────
+  function i18nText(key, fallback = '') {
+    const lang = uiLangSelect?.value || 'en';
+    const dict = I18N[lang] || I18N.en;
+    return dict[key] || I18N.en[key] || fallback || key;
+  }
+
+  function setLocalSubStatus(text, isError = false) {
+    if (!localSubStatus) return;
+    localSubStatus.textContent = text;
+    localSubStatus.style.color = isError ? '#d93025' : '#666';
+  }
+
+  function formatLocalSubLoaded(name, count) {
+    return i18nText('localSubLoaded')
+      .replace('{name}', name || 'subtitle')
+      .replace('{count}', String(count ?? 0));
+  }
+
+  async function applyLocalSubToTab(content, fileName) {
+    const offset = localSubOffsetSlider ? parseFloat(localSubOffsetSlider.value) || 0 : 0;
+    try {
+      const resp = await sendToTab({
+        action: 'load_local_subtitles',
+        content,
+        fileName,
+        offsetSec: offset
+      });
+      if (!resp) {
+        setLocalSubStatus(i18nText('localSubNotYoutube'), true);
+        return false;
+      }
+      if (resp.error === 'not_youtube') {
+        setLocalSubStatus(i18nText('localSubNotYoutube'), true);
+        return false;
+      }
+      if (!resp.ok) {
+        setLocalSubStatus(i18nText('localSubParseFail'), true);
+        return false;
+      }
+      lastLocalSubContent = content;
+      lastLocalSubFileName = fileName;
+      setLocalSubStatus(formatLocalSubLoaded(resp.fileName || fileName, resp.count));
+      return true;
+    } catch (e) {
+      setLocalSubStatus(i18nText('localSubNotYoutube'), true);
+      return false;
+    }
+  }
+
+  async function refreshLocalSubStatusFromTab() {
+    try {
+      const resp = await sendToTab({ action: 'get_local_subtitle_status' });
+      if (resp?.loaded) {
+        setLocalSubStatus(formatLocalSubLoaded(resp.fileName, resp.count));
+        if (localSubOffsetSlider && resp.offsetSec !== undefined) {
+          localSubOffsetSlider.value = resp.offsetSec;
+          if (localSubOffsetVal) localSubOffsetVal.textContent = Number(resp.offsetSec).toFixed(1);
+        }
+      }
+    } catch (e) {
+      // Not YouTube or content script not ready — keep idle text
+    }
+  }
+
+  if (localSubFileInput) {
+    localSubFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const content = await file.text();
+        await applyLocalSubToTab(content, file.name);
+      } catch (err) {
+        setLocalSubStatus(i18nText('localSubParseFail'), true);
+      }
+    });
+  }
+
+  if (localSubClearBtn) {
+    localSubClearBtn.addEventListener('click', async () => {
+      lastLocalSubContent = null;
+      lastLocalSubFileName = '';
+      if (localSubFileInput) localSubFileInput.value = '';
+      try {
+        await sendToTab({ action: 'clear_local_subtitles' });
+      } catch (e) {}
+      setLocalSubStatus(i18nText('localSubCleared'));
+    });
+  }
+
+  if (localSubReloadBtn) {
+    localSubReloadBtn.addEventListener('click', async () => {
+      if (!lastLocalSubContent) {
+        setLocalSubStatus(i18nText('localSubNeedFile'), true);
+        return;
+      }
+      await applyLocalSubToTab(lastLocalSubContent, lastLocalSubFileName);
+    });
+  }
+
+  if (localSubEnableSwitch) {
+    localSubEnableSwitch.addEventListener('change', async (e) => {
+      const on = e.target.checked;
+      await chrome.storage.local.set({ ytLocalSubEnabled: on ? 'on' : 'off' });
+      try {
+        await sendToTab({ action: 'set_local_subtitle_enabled', enabled: on });
+      } catch (err) {}
+    });
+  }
+
+  async function updateLocalSubOffset(val) {
+    const n = Math.max(-30, Math.min(30, parseFloat(val) || 0));
+    if (localSubOffsetSlider) localSubOffsetSlider.value = n;
+    if (localSubOffsetVal) localSubOffsetVal.textContent = n.toFixed(1);
+    await chrome.storage.local.set({ ytLocalSubOffset: n });
+    try {
+      await sendToTab({ action: 'set_local_subtitle_offset', offsetSec: n });
+    } catch (e) {}
+  }
+
+  if (localSubOffsetSlider) {
+    localSubOffsetSlider.addEventListener('input', (e) => updateLocalSubOffset(e.target.value));
+  }
+  if (localSubOffsetMinus) {
+    localSubOffsetMinus.addEventListener('click', () => {
+      const cur = parseFloat(localSubOffsetSlider?.value || 0) || 0;
+      updateLocalSubOffset(cur - 0.1);
+    });
+  }
+  if (localSubOffsetPlus) {
+    localSubOffsetPlus.addEventListener('click', () => {
+      const cur = parseFloat(localSubOffsetSlider?.value || 0) || 0;
+      updateLocalSubOffset(cur + 0.1);
+    });
+  }
+
+  // Refresh status if already loaded on this YouTube tab
+  refreshLocalSubStatusFromTab();
 
   document.querySelectorAll('.chrome-link, .shortcut-link').forEach(link => {
     link.addEventListener('click', (e) => {

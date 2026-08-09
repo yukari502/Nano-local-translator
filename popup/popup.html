@@ -258,6 +258,47 @@
       </div>
 
       <div class="section" style="margin-top: 10px;">
+        <label class="section-label" data-i18n="localSubTitle">Local subtitle file</label>
+        <div class="section-content">
+          <div class="field" style="flex-direction: row; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px;" data-i18n="localSubEnable">Show local subtitles</span>
+            <label class="switch" style="transform: scale(0.8);">
+              <input type="checkbox" id="localSubEnableSwitch" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="field" style="gap: 6px;">
+            <label data-i18n="localSubLoad">Load .srt / .vtt / .ass</label>
+            <input type="file" id="localSubFileInput" accept=".srt,.vtt,.ass,.ssa,text/vtt,application/x-subrip" style="font-size: 12px; width: 100%;">
+            <div id="localSubStatus" style="font-size: 11px; color: #666; line-height: 1.4; min-height: 16px;" data-i18n="localSubIdle">No file loaded. Open a YouTube video first.</div>
+          </div>
+
+          <div class="field" style="display: flex; gap: 8px;">
+            <button id="localSubClearBtn" class="btn-secondary" style="flex: 1; font-size: 12px; padding: 6px;" data-i18n="localSubClear">Clear</button>
+            <button id="localSubReloadBtn" class="btn-secondary" style="flex: 1; font-size: 12px; padding: 6px;" data-i18n="localSubReload">Re-apply</button>
+          </div>
+
+          <div class="field">
+            <label>
+              <span data-i18n="localSubOffset">Timing offset (s)</span>
+              (<span id="localSubOffsetVal">0.0</span>)
+            </label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button id="localSubOffsetMinus" class="btn-secondary" style="padding: 4px 10px; font-size: 14px; min-width: 36px;">−</button>
+              <input type="range" id="localSubOffsetSlider" min="-10" max="10" step="0.1" value="0" style="flex: 1;">
+              <button id="localSubOffsetPlus" class="btn-secondary" style="padding: 4px 10px; font-size: 14px; min-width: 36px;">+</button>
+            </div>
+            <div style="font-size: 11px; color: #888; margin-top: 2px;" data-i18n="localSubOffsetHint">Positive = delay subtitle · Negative = show earlier</div>
+          </div>
+
+          <div class="field" style="font-size: 11px; color: #888; line-height: 1.4;" data-i18n="localSubStyleHint">
+            Style follows YouTube dual-sub settings above (color / opacity). On the video page, use the CC button in the player bar to load files quickly.
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="margin-top: 10px;">
         <label class="section-label" data-i18n="ttsSettings">TTS Settings</label>
         <div class="section-content">
           <div class="field">
