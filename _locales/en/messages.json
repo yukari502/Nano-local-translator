@@ -1,8 +1,8 @@
 {
   "extensionName": {
-    "message": "Nano local AI translator - YouTube dual Subs"
+    "message": "Nano Local AI Translator - Bilingual Web Reader"
   },
   "extensionDescription": {
-    "message": "Open-source local AI translator with bilingual support, and YouTube Dual Subtitles, powered by Chrome's built-in AI"
+    "message": "Open-source local AI translator for bilingual web reading, select translation, and OCR, powered by Chrome's built-in AI"
   }
 }

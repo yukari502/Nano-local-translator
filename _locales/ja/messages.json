@@ -1,8 +1,8 @@
 {
   "extensionName": {
-    "message": "Nano ローカル AI 翻訳機 - YouTube dual Subs"
+    "message": "Nano ローカル AI 翻訳 - Web 2か国語対訳リーダー"
   },
   "extensionDescription": {
-    "message": "Chrome の組み込み AI を搭載した、バイリンガル対応および YouTube 2 か国語字幕付きのオープンソースのローカル AI 翻訳機"
+    "message": "Chrome 組み込み AI を搭載したオープンソースのローカル AI 翻訳。Web ページの対訳表示、選択テキスト翻訳、OCR 翻訳に対応"
   }
 }

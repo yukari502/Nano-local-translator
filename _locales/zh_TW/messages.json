@@ -1,8 +1,8 @@
 {
   "extensionName": {
-    "message": "Nano 本地 AI 翻譯 - YouTube 雙語字幕"
+    "message": "Nano 本地 AI 翻譯 - 網頁雙語對照閱讀"
   },
   "extensionDescription": {
-    "message": "開源的本地 AI 翻譯器，支持雙語及 YouTube 雙語字幕，由 Chrome 內建 AI 驅動"
+    "message": "完全本地化、隱私安全的開源 AI 翻譯器，支援全網頁雙語對照閱讀、劃詞翻譯與截圖 OCR，由 Chrome 內建 AI 驅動"
   }
 }
