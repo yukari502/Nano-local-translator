@@ -35,8 +35,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   if (request.type === 'checkApi') {
-    const available = typeof Translator !== 'undefined' && !!Translator.create;
-    sendResponse({ available });
+    (async () => {
+      const data = await chrome.storage.local.get(['translationEngine']);
+      if (data.translationEngine === 'custom') {
+        sendResponse({ available: true, engine: 'custom' });
+        return;
+      }
+      const available = typeof Translator !== 'undefined' && !!Translator.create;
+      sendResponse({ available, engine: 'chrome' });
+    })();
+    return true;
+  }
+  if (request.type === 'testCustomLLM') {
+    handleTestCustomLLM(request).then(sendResponse);
     return true;
   }
   if (request.type === 'translateText') {
@@ -211,8 +222,18 @@ chrome.commands.onCommand.addListener(async (command) => {
 });
 
 async function handleTranslate({ texts, sourceLang, targetLang }) {
-  const data = await chrome.storage.local.get(['useCache']);
+  const data = await chrome.storage.local.get([
+    'useCache',
+    'translationEngine',
+    'customApiUrl',
+    'customApiKey',
+    'customModel',
+    'customConcurrency',
+    'customChunkSize',
+    'customPrompt'
+  ]);
   const useCache = data.useCache !== false; // true by default
+  const engine = data.translationEngine || 'chrome';
 
   let actualSourceLang = sourceLang;
   if (sourceLang === 'auto' && texts.length > 0) {
@@ -272,7 +293,37 @@ async function handleTranslate({ texts, sourceLang, targetLang }) {
     return { translations: results };
   }
 
-  // 检查 Translator API
+  // Engine 2: 自定义 OpenAI 兼容模型 (本地部署如 Ollama/LM Studio 或外部服务)
+  if (engine === 'custom') {
+    const customConfig = {
+      apiUrl: data.customApiUrl || 'http://localhost:11434/v1',
+      apiKey: data.customApiKey || '',
+      model: data.customModel || 'qwen2.5:7b',
+      concurrency: data.customConcurrency || 3,
+      chunkSize: data.customChunkSize || 10,
+      customPrompt: data.customPrompt || ''
+    };
+
+    const customTranslations = await translateWithOpenAICompatible({
+      batch,
+      sourceLang: actualSourceLang,
+      targetLang,
+      config: customConfig
+    });
+
+    for (const text of batch) {
+      const translated = customTranslations[text] || text;
+      if (useCache && translated !== text) {
+        const key = cacheKey(actualSourceLang, targetLang, text);
+        cacheSet(key, translated);
+      }
+      results[text] = translated;
+    }
+
+    return { translations: results };
+  }
+
+  // Engine 1: Chrome 内置 Translator API (Gemini Nano)
   if (typeof Translator === 'undefined' || !Translator.create) {
     for (const text of batch) results[text] = text;
     return { translations: results, error: 'Translator API not available' };
@@ -300,6 +351,157 @@ async function handleTranslate({ texts, sourceLang, targetLang }) {
   }
 
   return { translations: results };
+}
+
+// ── OpenAI-Compatible Custom Translation ──────────────
+async function translateWithOpenAICompatible({ batch, sourceLang, targetLang, config }) {
+  const {
+    apiUrl = 'http://localhost:11434/v1',
+    apiKey = '',
+    model = 'qwen2.5:7b',
+    concurrency = 3,
+    chunkSize = 10,
+    customPrompt = ''
+  } = config;
+
+  const cleanBase = apiUrl.trim().replace(/\/+$/, '');
+  const endpoint = cleanBase.endsWith('/chat/completions') ? cleanBase : `${cleanBase}/chat/completions`;
+
+  const parsedConcurrency = Math.max(1, Math.min(10, parseInt(concurrency, 10) || 3));
+  const parsedChunkSize = Math.max(1, Math.min(30, parseInt(chunkSize, 10) || 10));
+
+  const chunks = [];
+  for (let i = 0; i < batch.length; i += parsedChunkSize) {
+    chunks.push(batch.slice(i, i + parsedChunkSize));
+  }
+
+  const results = {};
+
+  const defaultPrompt = `You are an expert translator. Translate each string in the input JSON array from "${sourceLang}" to "${targetLang}". Return ONLY a valid JSON array of translated strings in the exact same order and length. Do NOT include markdown code blocks, explanations, greetings, or notes. Example output: ["translation 1", "translation 2"]`;
+  const sysPrompt = customPrompt && customPrompt.trim() ? customPrompt.trim() : defaultPrompt;
+
+  async function translateSingleChunk(chunk) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey && apiKey.trim()) {
+      headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+    }
+
+    const payload = {
+      model: model.trim() || 'qwen2.5:7b',
+      messages: [
+        { role: 'system', content: sysPrompt },
+        { role: 'user', content: JSON.stringify(chunk) }
+      ],
+      temperature: 0.1
+    };
+
+    try {
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => '');
+        throw new Error(`HTTP ${resp.status}: ${errText.slice(0, 120)}`);
+      }
+
+      const resData = await resp.json();
+      const content = resData.choices?.[0]?.message?.content?.trim() || '';
+
+      let cleaned = content;
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+      }
+
+      let parsed = null;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch (e) {
+        const arrMatch = cleaned.match(/\[[\s\S]*\]/);
+        if (arrMatch) {
+          try { parsed = JSON.parse(arrMatch[0]); } catch (e2) {}
+        }
+      }
+
+      if (Array.isArray(parsed) && parsed.length === chunk.length) {
+        chunk.forEach((orig, idx) => {
+          results[orig] = String(parsed[idx]);
+        });
+      } else {
+        if (chunk.length === 1 && content) {
+          results[chunk[0]] = content.replace(/^["']|["']$/g, '').trim();
+        } else {
+          const lines = cleaned.split('\n')
+            .map(l => l.replace(/^[-*•\d+.\)]\s*/, '').replace(/^["']|["']$/g, '').trim())
+            .filter(Boolean);
+          if (lines.length === chunk.length) {
+            chunk.forEach((orig, idx) => { results[orig] = lines[idx]; });
+          } else {
+            console.warn('Custom LLM chunk format parse fallback to original:', content);
+            chunk.forEach(orig => { results[orig] = orig; });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Custom LLM translation failed for chunk:', err);
+      chunk.forEach(orig => { results[orig] = orig; });
+    }
+  }
+
+  const pool = new Set();
+  for (const chunk of chunks) {
+    const task = translateSingleChunk(chunk);
+    pool.add(task);
+    task.finally(() => pool.delete(task));
+    if (pool.size >= parsedConcurrency) {
+      await Promise.race(pool);
+    }
+  }
+  await Promise.all(pool);
+
+  return results;
+}
+
+// ── Test Custom LLM Connection ────────────────────────
+async function handleTestCustomLLM(request) {
+  const { apiUrl, apiKey, model } = request;
+  const cleanBase = (apiUrl || 'http://localhost:11434/v1').trim().replace(/\/+$/, '');
+  const endpoint = cleanBase.endsWith('/chat/completions') ? cleanBase : `${cleanBase}/chat/completions`;
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey && apiKey.trim()) {
+    headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+  }
+
+  const payload = {
+    model: (model || 'qwen2.5:7b').trim(),
+    messages: [
+      { role: 'system', content: 'You are a translator. Translate the text to English. Output only the translation.' },
+      { role: 'user', content: '你好，世界！' }
+    ],
+    temperature: 0.1
+  };
+
+  const startTime = Date.now();
+  try {
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+    const latency = Date.now() - startTime;
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      return { ok: false, error: `HTTP ${resp.status}: ${errText.slice(0, 150)}` };
+    }
+    const data = await resp.json();
+    const reply = data.choices?.[0]?.message?.content?.trim() || '';
+    return { ok: true, translation: reply, latency };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
 
 async function handleTranslateText(text) {

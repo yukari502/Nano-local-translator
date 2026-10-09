@@ -144,8 +144,10 @@
 
     <!-- ════ Settings Tab ════ -->
     <div id="settingsTab" class="tab-pane" style="display:none">
+      
+      <!-- ── Section: Plugin & General Settings ── -->
       <div class="section">
-        <label class="section-label" data-i18n="pluginSettings">Plugin Settings</label>
+        <label class="section-label" data-i18n="pluginSettings">General Settings</label>
         
         <div class="field">
           <label data-i18n="uiLanguage">UI Language</label>
@@ -167,11 +169,9 @@
           <a href="#" class="btn-secondary chrome-link" data-url="chrome://extensions/shortcuts" style="text-align: center; text-decoration: none; display: inline-block; width: auto;" data-i18n="editShortcuts">Edit (Alt+T)</a>
         </div>
 
-      <div class="section info-section">
-        <label class="section-label" data-i18n="translationSettings">Translation Settings</label>
-        <div class="section-content">
-          <div class="field">
-            <div class="field-label-with-info">
+        <div class="field" style="margin-top: 4px;">
+          <div class="field-label-with-info" style="justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
               <label data-i18n="cacheResults">Cache Translation Results</label>
               <div class="info-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
@@ -188,6 +188,95 @@
         </div>
       </div>
 
+      <!-- ── Section: Translation Engine (Built-in vs Custom LLM) ── -->
+      <div class="section engine-section" style="margin-top: 10px;">
+        <div class="field-label-with-info" style="display: flex; align-items: center; gap: 6px;">
+          <label class="section-label static-label" style="margin: 0;" data-i18n="engineSettings">Translation Engine</label>
+          <div class="info-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            <div class="info-tooltip" data-i18n="engineHintTooltip">
+              Recommended: Local models (e.g. Ollama, LM Studio) for 100% on-device privacy. External cloud providers are also supported.
+            </div>
+          </div>
+        </div>
+
+        <div class="engine-picker">
+          <label class="engine-option" id="engineOptChrome">
+            <input type="radio" name="translationEngine" value="chrome" id="engineRadioChrome" checked>
+            <div class="engine-card">
+              <div class="engine-card-title">
+                <span data-i18n="engineChromeTitle">Chrome Built-in AI</span>
+                <span class="engine-badge badge-green" data-i18n="badgeBuiltin">Default</span>
+              </div>
+              <div class="engine-card-desc" data-i18n="engineChromeDesc">Gemini Nano (100% local, zero-config, fast)</div>
+            </div>
+          </label>
+          <label class="engine-option" id="engineOptCustom">
+            <input type="radio" name="translationEngine" value="custom" id="engineRadioCustom">
+            <div class="engine-card">
+              <div class="engine-card-title">
+                <span data-i18n="engineCustomTitle">Custom LLM</span>
+                <span class="engine-badge badge-blue" data-i18n="badgeOpenAI">OpenAI Format</span>
+              </div>
+              <div class="engine-card-desc" data-i18n="engineCustomDesc">Ollama, LM Studio or Cloud API (Fallback)</div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Custom LLM Configuration Subpanel -->
+        <div id="customEnginePanel" class="custom-engine-panel" style="display: none; margin-top: 8px;">
+          <div class="field">
+            <label data-i18n="customApiUrl">API Base URL</label>
+            <input type="text" id="customApiUrl" placeholder="http://localhost:11434/v1">
+          </div>
+          <div class="field">
+            <label data-i18n="customModel">Model Name</label>
+            <input type="text" id="customModel" placeholder="qwen2.5:7b">
+          </div>
+          <div class="field">
+            <label data-i18n="customApiKey">API Key (Optional for Local)</label>
+            <input type="password" id="customApiKey" placeholder="Empty for local">
+          </div>
+
+          <div class="field" style="margin-top: 2px;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button id="testCustomBtn" class="btn-secondary" style="font-size: 11px; padding: 5px 12px; width: auto; flex-shrink: 0;" data-i18n="testConnectionBtn">⚡ Test Connection</button>
+              <span id="testStatusMsg" style="font-size: 11px; line-height: 1.3; flex: 1;"></span>
+            </div>
+          </div>
+
+          <!-- Concurrency and Context limit -->
+          <div class="sub-card" style="margin-top: 4px;">
+            <div class="sub-card-title" data-i18n="perfTitle">Throughput & Concurrency Settings</div>
+            <div class="field">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label data-i18n="customConcurrency">Concurrent Requests</label>
+                <span class="val-badge" id="customConcurrencyVal">3</span>
+              </div>
+              <input type="range" id="customConcurrency" min="1" max="10" step="1" value="3">
+              <div class="sub-hint" data-i18n="concurrencyHint">Number of simultaneous API requests. Lower values save GPU memory.</div>
+            </div>
+
+            <div class="field" style="margin-top: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label data-i18n="customChunkSize">Batch Context Limit (Items / Request)</label>
+                <span class="val-badge" id="customChunkSizeVal">10</span>
+              </div>
+              <input type="range" id="customChunkSize" min="2" max="30" step="1" value="10">
+              <div class="sub-hint" data-i18n="chunkSizeHint">Number of sentences grouped in each LLM prompt batch.</div>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top: 4px;">
+            <details style="font-size: 11px; color: #666;">
+              <summary style="cursor: pointer; font-weight: 500;" data-i18n="advancedPromptTitle">Advanced: Custom Prompt</summary>
+              <textarea id="customPrompt" rows="2" style="width: 100%; margin-top: 6px; padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; font-family: inherit; font-size: 11px; resize: vertical;" placeholder="Default: Professional JSON array translator prompt..."></textarea>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section: Screenshot OCR Settings ── -->
       <div class="section" style="margin-top: 10px;">
         <label class="section-label" data-i18n="ocrTranslateTitle">Screenshot OCR Settings</label>
         <div class="section-content">
@@ -226,6 +315,7 @@
         </div>
       </div>
 
+      <!-- ── Section: YouTube Dual Subtitles ── -->
       <div class="section" style="margin-top: 10px;">
         <label class="section-label" data-i18n="youtubeSettingsTitle">YouTube dual subs settings</label>
         <div class="section-content">
@@ -257,6 +347,7 @@
         </div>
       </div>
 
+      <!-- ── Section: TTS Settings ── -->
       <div class="section" style="margin-top: 10px;">
         <label class="section-label" data-i18n="ttsSettings">TTS Settings</label>
         <div class="section-content">
@@ -298,6 +389,8 @@
         </a>
       </div>
 
+    </div> <!-- Close #settingsTab -->
+
     <!-- Welcome Modal -->
     <div id="welcomeModal" class="modal-overlay" style="display: none;">
       <div class="modal-content">
@@ -310,6 +403,33 @@
         <div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 15px;">
           <button id="welcomeNeverShow" class="btn-primary" data-i18n="welcomeNeverShow" style="flex: auto;">Close & Never Show Again</button>
           <button id="welcomeClose" class="btn-secondary" data-i18n="welcomeClose" style="flex: 0 0 auto;">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Model Privacy Warning Modal -->
+    <div id="customWarningModal" class="modal-overlay" style="display: none;">
+      <div class="modal-content" style="max-width: 310px;">
+        <h3 data-i18n="warningModalTitle" style="margin-top: 0; margin-bottom: 10px; color: #1a73e8; font-size: 15px; display: flex; align-items: center; gap: 6px;">
+          <span>🔒</span> <span>Privacy & Provider Notice</span>
+        </h3>
+        <div style="line-height: 1.45; font-size: 12px; margin: 0 0 12px 0; color: #444;">
+          <p style="margin: 0 0 8px 0;">
+            <strong style="color: #0d652d;" data-i18n="warningLocalTag">Local Models (Recommended):</strong>
+            <span data-i18n="warningLocalP">Using local models (Ollama, LM Studio) processes all translations on your device with 100% privacy.</span>
+          </p>
+          <p style="margin: 0 0 10px 0;">
+            <strong style="color: #d93025;" data-i18n="warningCloudTag">External Providers:</strong>
+            <span data-i18n="warningCloudP">If using third-party cloud endpoints, translated page text is sent to their servers. Ensure you trust the provider.</span>
+          </p>
+          <div style="display: flex; align-items: center; gap: 6px; padding-top: 8px; border-top: 1px dashed #eee;">
+            <input type="checkbox" id="warningNeverShow">
+            <label for="warningNeverShow" style="font-size: 11px; cursor: pointer; color: #666;" data-i18n="warningNeverShow">Do not show again</label>
+          </div>
+        </div>
+        <div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button id="warningCancelBtn" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;" data-i18n="warningCancel">Cancel</button>
+          <button id="warningConfirmBtn" class="btn-primary" style="font-size: 12px; padding: 6px 12px;" data-i18n="warningConfirm">Enable</button>
         </div>
       </div>
     </div>

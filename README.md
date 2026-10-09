@@ -1,14 +1,18 @@
-# Nano local translator
+# Nano Local AI Translator - Bilingual Web Reader
 
-**Hi! I'm an amateur developer.** I built Nano Local Translator on a whim after discovering Chrome's new Built-in AI features. Since then, I've been constantly polishing the features and user experience based on my own daily usage. It's a fully open-source project, and I hope you like it! Feedback on GitHub is highly welcomed.
+**Hi! I'm an amateur developer.** I built Nano Local AI Translator on a whim after discovering Chrome's new Built-in AI features. Since then, I've been constantly polishing the features and user experience based on my own daily usage. It's a fully open-source project, and I hope you like it! Feedback on GitHub is highly welcomed.
 
-Nano Local Translator is a lightning-fast, private web page translator powered entirely by Chrome's Built-in AI (Gemini Nano). It processes everything locally on your device—ensuring **maximum speed** (it’s genuinely fast!) and **100% privacy** since your data never leaves your machine.
+Nano Local AI Translator is a lightning-fast, private web page translator powered entirely by Chrome's Built-in AI (Gemini Nano). It processes everything locally on your device—ensuring **maximum speed** (it’s genuinely fast!) and **100% privacy** since your data never leaves your machine.
+
+You can find it in [Chrome web store](https://chromewebstore.google.com/detail/bobljnncaioenhgjhpcnfghdoabocnim?utm_source=item-share-cb)
 
 ## Features
 
-- **Full Page & Highlight Translation**: Translate instantly with side-by-side bilingual reading.
-- **YouTube Dual Subs**: Seamlessly add bilingual dual subtitles to videos.
-- **Offline Screenshot Translate (Alt+S)**: Extract and translate text from any image using local OCR.
+- **Side-by-side Bilingual Web Reading**: Translate full web pages instantly with immersive bilingual comparison.
+- **Select & Hover Translation**: Instant word and phrase lookup with pronunciation (TTS).
+- **Offline Screenshot OCR Translate (Alt+S)**: Extract and translate text from any image or screen area using local OCR.
+- **Custom Local / External LLM Engine (Optional)**: Connect local models (Ollama, LM Studio) or OpenAI-compatible endpoints with concurrency and throughput controls.
+- **YouTube Dual Subtitles**: Seamlessly overlay bilingual dual subtitles on YouTube videos.
 
 ## Requirements
 
@@ -29,7 +33,11 @@ Nano Local Translator is a lightning-fast, private web page translator powered e
 
 - Click the extension icon to open the popup interface.
 - **Translate View**: Select your source and target languages. Choose your display mode and independently toggle Translation and/or Speak Aloud (TTS) under Select-to-Translate.
-- **Settings View**: Access settings by clicking the gear icon (⚙️) to change the UI language, configure translation caching, and adjust TTS parameters (voice, speed, pitch, volume).
+- **Settings View**: Access settings by clicking the gear icon (⚙️) to switch translation engines (Chrome Built-in vs. Custom OpenAI-compatible LLM), configure concurrency/batching, change UI language, configure caching, and adjust TTS parameters.
+
+## Documentation
+
+For technical architecture details, DOM traversal mechanisms, and developer debugging guides, please refer to the [Technical Manual](manual.md).
 
 ## Privacy
 

@@ -1,8 +1,8 @@
 {
   "extensionName": {
-    "message": "Nano Lokaler KI-Übersetzer - YouTube Subs"
+    "message": "Nano Lokaler KI-Übersetzer - Zweisprachiger Web-Reader"
   },
   "extensionDescription": {
-    "message": "Open-Source lokaler KI-Übersetzer mit zweisprachiger Unterstützung und YouTube-Doppeluntertiteln, basierend auf Chromes integrierter KI"
+    "message": "Open-Source lokaler KI-Übersetzer für zweisprachiges Web-Lesen, Textauswahl und OCR, basierend auf Chromes integrierter KI"
   }
 }

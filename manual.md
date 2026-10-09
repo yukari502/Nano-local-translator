@@ -1,7 +1,7 @@
-# Nano local translator Technical Manual
+# Nano Local AI Translator Technical Manual
 
 ## 1. Project Overview
-Nano local translator is a lightweight, privacy-focused Chrome extension that leverages Chrome's Built-in AI (Translator API) to translate web pages locally. It operates entirely on-device without relying on external cloud services.
+Nano Local AI Translator (Bilingual Web Reader) is a lightweight, privacy-focused Chrome extension that leverages Chrome's Built-in AI (Translator API) to translate web pages locally. It operates entirely on-device without relying on external cloud services.
 
 ## 2. Technology Stack
 - **Extension Framework**: Chrome Extension Manifest V3 (MV3)
@@ -29,7 +29,9 @@ Nano local translator is a lightweight, privacy-focused Chrome extension that le
 - **Text Extraction**: Uses `TreeWalker` in `content.js` to traverse the DOM, filtering out non-translatable tags (e.g., `SCRIPT`, `STYLE`, `CODE`) and hidden elements, collecting valid text nodes.
 - **Batch Processing**: Extracted texts are sent to `background.js` in chunks (currently set to 20) to prevent blocking requests or oversized data transfer.
 - **Auto-Detect Language**: Utilizes Chrome's built-in AI `LanguageDetector` API (with a stable `chrome.i18n` fallback) to seamlessly detect the source language on-the-fly when set to "Auto Detect".
-- **Execution**: `background.js` instantiates the translator via `Translator.create` and translates chunks iteratively using `translator.translate()`.
+- **Execution (Dual Engine Architecture)**:
+  - **Chrome Built-in Engine (Default)**: `background.js` instantiates the local translator via `Translator.create` and translates chunks iteratively using `translator.translate()`.
+  - **Custom OpenAI-Compatible Engine (Fallback / Power User)**: Supports local inference engines (Ollama, LM Studio) and standard cloud endpoints (`/v1/chat/completions`). Features configurable concurrency limits (1-10 simultaneous requests) and batch context chunking (2-30 items per prompt) to maximize throughput while avoiding GPU VRAM overload.
 - **DOM Mutation (Modes)**:
   - **Translate Only**: Modifies the `textContent` of nodes directly. Uses a `Map` (`originalMap`) to store original text for restoration.
   - **Bilingual**: Replaces original text nodes with a `span.ai-pair` element containing both original and translated text side-by-side.
