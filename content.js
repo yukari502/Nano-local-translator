@@ -224,6 +224,9 @@ async function processPageTranslationBatch() {
         sourceLang: currentSource,
         targetLang: currentTarget
       });
+      if (resp?.error) {
+        console.warn('Translation warning:', resp.error);
+      }
       if (resp?.translations) {
         Object.assign(allTranslations, resp.translations);
       }

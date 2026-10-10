@@ -26,51 +26,78 @@ function cacheSet(key, val) {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'translate') {
-    handleTranslate(request).then(sendResponse);
+    handleTranslate(request)
+      .then(res => sendResponse(res))
+      .catch(err => {
+        console.error('handleTranslate error:', err);
+        sendResponse({ translations: {}, error: err.message || String(err) });
+      });
     return true;
   }
   if (request.type === 'clearCache') {
     cache.clear();
+    clearTranslatorPool();
     sendResponse({ ok: true });
     return true;
   }
   if (request.type === 'checkApi') {
-    (async () => {
-      const data = await chrome.storage.local.get(['translationEngine']);
-      if (data.translationEngine === 'custom') {
-        sendResponse({ available: true, engine: 'custom' });
-        return;
-      }
-      const available = typeof Translator !== 'undefined' && !!Translator.create;
-      sendResponse({ available, engine: 'chrome' });
-    })();
+    handleCheckApi()
+      .then(res => sendResponse(res))
+      .catch(err => {
+        console.error('checkApi error:', err);
+        sendResponse({ available: false, error: err.message || String(err) });
+      });
     return true;
   }
   if (request.type === 'testCustomLLM') {
-    handleTestCustomLLM(request).then(sendResponse);
+    handleTestCustomLLM(request)
+      .then(res => sendResponse(res))
+      .catch(err => {
+        console.error('testCustomLLM error:', err);
+        sendResponse({ ok: false, error: err.message || String(err) });
+      });
     return true;
   }
   if (request.type === 'translateText') {
-    handleTranslateText(request.text).then(sendResponse);
+    handleTranslateText(request.text)
+      .then(res => sendResponse(res))
+      .catch(err => {
+        console.error('translateText error:', err);
+        sendResponse({ translations: {}, error: err.message || String(err) });
+      });
     return true;
   }
   if (request.type === 'speak') {
-    handleSpeak(request, sender).then(sendResponse);
+    handleSpeak(request, sender)
+      .then(res => sendResponse(res))
+      .catch(err => {
+        console.error('speak error:', err);
+        sendResponse({ ok: false, error: err.message || String(err) });
+      });
     return true;
   }
   if (request.type === 'stopSpeak') {
-    chrome.tts.stop();
-    chrome.runtime.sendMessage({ action: 'stop_audio' }).catch(() => {});
-    sendResponse({ ok: true });
+    try {
+      chrome.tts.stop();
+      chrome.runtime.sendMessage({ action: 'stop_audio' }).catch(() => {});
+      sendResponse({ ok: true });
+    } catch (e) {
+      sendResponse({ ok: false, error: e.message });
+    }
     return true;
   }
   if (request.type === 'process_ocr') {
-    handleOcrRequest(request).then(sendResponse);
+    handleOcrRequest(request)
+      .then(res => sendResponse(res))
+      .catch(err => {
+        console.error('process_ocr error:', err);
+        sendResponse({ success: false, error: err.message || String(err) });
+      });
     return true;
   }
   if (request.action === 'ocr_progress') {
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-      if (tabs[0]) {
+      if (tabs && tabs[0]) {
         chrome.tabs.sendMessage(tabs[0].id, request).catch(() => {});
       }
     });
@@ -79,24 +106,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'test_capture') {
     debugLog('Manual test_capture triggered from popup');
     (async () => {
-      const data = await chrome.storage.local.get(['isEnabled', 'ocrTranslate']);
-      if (data.isEnabled === false || data.ocrTranslate !== 'on') {
-        debugLog('Aborted: feature disabled');
-        return;
-      }
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab) {
-        try {
-          const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
-          chrome.tabs.sendMessage(tab.id, { action: 'start_crop', image: dataUrl });
-          debugLog('Test capture successful');
-        } catch (e) {
-          debugLog('Test capture error: ' + e.message);
+      try {
+        const data = await chrome.storage.local.get(['isEnabled', 'ocrTranslate']);
+        if (data.isEnabled === false || data.ocrTranslate !== 'on') {
+          debugLog('Aborted: feature disabled');
+          return;
         }
-      } else {
-        debugLog('No active tab found for test capture.');
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab) {
+          const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+          chrome.tabs.sendMessage(tab.id, { action: 'start_crop', image: dataUrl }).catch(() => {});
+          debugLog('Test capture successful');
+        } else {
+          debugLog('No active tab found for test capture.');
+        }
+      } catch (e) {
+        debugLog('Test capture error: ' + e.message);
       }
     })();
+    return false;
   }
 });
 
@@ -209,7 +237,7 @@ chrome.commands.onCommand.addListener(async (command) => {
         chrome.tabs.sendMessage(tab.id, {
           action: 'start_crop',
           image: dataUrl
-        });
+        }).catch(() => {});
         debugLog('Sent start_crop to content script');
       } catch (e) {
         console.error("Failed to capture screen:", e);
@@ -221,7 +249,140 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-async function handleTranslate({ texts, sourceLang, targetLang }) {
+// ── Built-in Translation API Adapter ──────────────────
+function getBuiltinTranslationApi() {
+  const root = typeof globalThis !== 'undefined' ? globalThis : self;
+  if (typeof root.Translator !== 'undefined' && root.Translator.create) {
+    return {
+      type: 'Translator',
+      create: (opts) => root.Translator.create(opts),
+      check: (opts) => root.Translator.availability ? root.Translator.availability(opts) : Promise.resolve('readily')
+    };
+  }
+  if (typeof root.translation !== 'undefined' && root.translation.createTranslator) {
+    return {
+      type: 'translation',
+      create: (opts) => root.translation.createTranslator(opts),
+      check: (opts) => root.translation.canTranslate ? root.translation.canTranslate(opts) : Promise.resolve('readily')
+    };
+  }
+  if (typeof root.ai !== 'undefined' && root.ai.translator && root.ai.translator.create) {
+    return {
+      type: 'ai.translator',
+      create: (opts) => root.ai.translator.create(opts),
+      check: (opts) => root.ai.translator.capabilities ? root.ai.translator.capabilities() : Promise.resolve({ available: 'readily' })
+    };
+  }
+  return null;
+}
+
+function getBuiltinDetectorApi() {
+  const root = typeof globalThis !== 'undefined' ? globalThis : self;
+  if (typeof root.LanguageDetector !== 'undefined' && root.LanguageDetector.create) {
+    return {
+      type: 'LanguageDetector',
+      create: (opts) => root.LanguageDetector.create(opts)
+    };
+  }
+  if (typeof root.translation !== 'undefined' && root.translation.createDetector) {
+    return {
+      type: 'translation',
+      create: (opts) => root.translation.createDetector(opts)
+    };
+  }
+  if (typeof root.ai !== 'undefined' && root.ai.languageDetector && root.ai.languageDetector.create) {
+    return {
+      type: 'ai.languageDetector',
+      create: (opts) => root.ai.languageDetector.create(opts)
+    };
+  }
+  return null;
+}
+
+const translatorPool = new Map();
+
+function clearTranslatorPool() {
+  for (const [key, instance] of translatorPool.entries()) {
+    try {
+      if (instance && typeof instance.destroy === 'function') {
+        instance.destroy();
+      }
+    } catch (e) {}
+  }
+  translatorPool.clear();
+}
+
+function normalizeLangTag(lang) {
+  if (!lang) return 'en';
+  const l = String(lang).trim().toLowerCase();
+  if (l === 'zh' || l === 'zh-cn' || l === 'zh-hans') return 'zh';
+  if (l === 'zh-tw' || l === 'zh-hk' || l === 'zh-hant') return 'zh-Hant';
+  if (l === 'iw') return 'he';
+  if (l === 'in') return 'id';
+  if (l === 'jw') return 'jv';
+  return l.split('-')[0];
+}
+
+async function getOrCreateBuiltinTranslator(sourceLang, targetLang) {
+  const normSource = normalizeLangTag(sourceLang);
+  const normTarget = normalizeLangTag(targetLang);
+  const poolKey = `${normSource}->${normTarget}`;
+
+  if (translatorPool.has(poolKey)) {
+    return translatorPool.get(poolKey);
+  }
+
+  const api = getBuiltinTranslationApi();
+  if (!api) {
+    throw new Error('Chrome Built-in Translator API not available in this browser');
+  }
+
+  let instance = null;
+  // Primary attempt
+  try {
+    instance = await api.create({
+      sourceLanguage: normSource,
+      targetLanguage: normTarget
+    });
+  } catch (err) {
+    // If exact tag failed, try BCP 47 variant (e.g. 'zh-Hans')
+    const altSource = normSource === 'zh' ? 'zh-Hans' : normSource;
+    const altTarget = normTarget === 'zh' ? 'zh-Hans' : normTarget;
+    if (altSource !== normSource || altTarget !== normTarget) {
+      instance = await api.create({
+        sourceLanguage: altSource,
+        targetLanguage: altTarget
+      });
+    } else {
+      throw err;
+    }
+  }
+
+  if (instance) {
+    translatorPool.set(poolKey, instance);
+  }
+  return instance;
+}
+
+async function handleCheckApi() {
+  const data = await chrome.storage.local.get(['translationEngine']);
+  if (data.translationEngine === 'custom') {
+    return { available: true, engine: 'custom' };
+  }
+  const api = getBuiltinTranslationApi();
+  return { available: !!api, engine: 'chrome' };
+}
+
+async function handleTranslate(request) {
+  const texts = Array.isArray(request?.texts) ? request.texts : [];
+  const sourceLang = request?.sourceLang || 'auto';
+  const targetLang = request?.targetLang || 'zh';
+
+  const results = {};
+  if (texts.length === 0) {
+    return { translations: results };
+  }
+
   const data = await chrome.storage.local.get([
     'useCache',
     'translationEngine',
@@ -238,31 +399,37 @@ async function handleTranslate({ texts, sourceLang, targetLang }) {
   let actualSourceLang = sourceLang;
   if (sourceLang === 'auto' && texts.length > 0) {
     let detected = null;
-    if (typeof LanguageDetector !== 'undefined' && LanguageDetector.create) {
+    const detectorApi = getBuiltinDetectorApi();
+    if (detectorApi) {
       try {
-        const detector = await LanguageDetector.create();
-        const results = await detector.detect(texts[0]);
-        if (results && results.length > 0) {
-          detected = results[0].detectedLanguage.split('-')[0];
+        const detector = await detectorApi.create();
+        const detectResults = await detector.detect(texts[0]);
+        if (detectResults && detectResults.length > 0) {
+          detected = detectResults[0].detectedLanguage.split('-')[0];
         }
-      } catch (e) { console.warn("LanguageDetector failed", e); }
-    } else if (typeof translation !== 'undefined' && translation.createDetector) {
-      try {
-        const detector = await translation.createDetector();
-        const results = await detector.detect(texts[0]);
-        if (results && results.length > 0) {
-          detected = results[0].detectedLanguage.split('-')[0];
-        }
-      } catch (e) { console.warn("translation.createDetector failed", e); }
+      } catch (e) {
+        console.warn('Detector failed:', e);
+      }
     }
-    
+
     if (!detected) {
       detected = await new Promise(resolve => {
         if (chrome.i18n && chrome.i18n.detectLanguage) {
-          chrome.i18n.detectLanguage(texts[0], (res) => {
-            if (res && res.languages && res.languages.length > 0) resolve(res.languages[0].language.split('-')[0]);
-            else resolve('en');
-          });
+          try {
+            chrome.i18n.detectLanguage(texts[0], (res) => {
+              if (chrome.runtime?.lastError) {
+                resolve('en');
+                return;
+              }
+              if (res && res.languages && res.languages.length > 0) {
+                resolve(res.languages[0].language.split('-')[0]);
+              } else {
+                resolve('en');
+              }
+            });
+          } catch (e) {
+            resolve('en');
+          }
         } else {
           resolve('en');
         }
@@ -271,10 +438,17 @@ async function handleTranslate({ texts, sourceLang, targetLang }) {
     actualSourceLang = detected || 'en';
   }
 
-  const results = {};
+  // If actual source language equals target language, return originals directly
+  if (normalizeLangTag(actualSourceLang) === normalizeLangTag(targetLang)) {
+    for (const text of texts) {
+      results[text] = text;
+    }
+    return { translations: results };
+  }
+
   const batch = [];
 
-  // 分离缓存命中与未命中
+  // Check cache
   for (const text of texts) {
     if (useCache) {
       const key = cacheKey(actualSourceLang, targetLang, text);
@@ -293,7 +467,7 @@ async function handleTranslate({ texts, sourceLang, targetLang }) {
     return { translations: results };
   }
 
-  // Engine 2: 自定义 OpenAI 兼容模型 (本地部署如 Ollama/LM Studio 或外部服务)
+  // Engine 2: Custom OpenAI Compatible
   if (engine === 'custom') {
     const customConfig = {
       apiUrl: data.customApiUrl || 'http://localhost:11434/v1',
@@ -304,49 +478,63 @@ async function handleTranslate({ texts, sourceLang, targetLang }) {
       customPrompt: data.customPrompt || ''
     };
 
-    const customTranslations = await translateWithOpenAICompatible({
-      batch,
-      sourceLang: actualSourceLang,
-      targetLang,
-      config: customConfig
-    });
+    try {
+      const customTranslations = await translateWithOpenAICompatible({
+        batch,
+        sourceLang: actualSourceLang,
+        targetLang,
+        config: customConfig
+      });
 
-    for (const text of batch) {
-      const translated = customTranslations[text] || text;
-      if (useCache && translated !== text) {
-        const key = cacheKey(actualSourceLang, targetLang, text);
-        cacheSet(key, translated);
+      for (const text of batch) {
+        const translated = customTranslations[text] || text;
+        if (useCache && translated !== text) {
+          const key = cacheKey(actualSourceLang, targetLang, text);
+          cacheSet(key, translated);
+        }
+        results[text] = translated;
       }
-      results[text] = translated;
+    } catch (err) {
+      console.error('Custom LLM translation failed:', err);
+      for (const text of batch) results[text] = text;
+      return { translations: results, error: err.message || String(err) };
     }
 
     return { translations: results };
   }
 
-  // Engine 1: Chrome 内置 Translator API (Gemini Nano)
-  if (typeof Translator === 'undefined' || !Translator.create) {
+  // Engine 1: Chrome Built-in AI (Gemini Nano)
+  const builtinApi = getBuiltinTranslationApi();
+  if (!builtinApi) {
     for (const text of batch) results[text] = text;
-    return { translations: results, error: 'Translator API not available' };
+    return { translations: results, error: 'Translator API not available in this browser context' };
   }
 
-  // 创建翻译器（首次会触发模型下载）
-  const translator = await Translator.create({
-    sourceLanguage: actualSourceLang,
-    targetLanguage: targetLang
-  });
+  let translator = null;
+  const poolKey = `${normalizeLangTag(actualSourceLang)}->${normalizeLangTag(targetLang)}`;
+  try {
+    translator = await getOrCreateBuiltinTranslator(actualSourceLang, targetLang);
+  } catch (err) {
+    console.error('Failed to create Translator instance:', err);
+    translatorPool.delete(poolKey);
+    for (const text of batch) results[text] = text;
+    return { translations: results, error: err.message || String(err) };
+  }
 
-  // 逐条翻译
   for (const text of batch) {
     try {
       const translated = await translator.translate(text);
-      if (useCache) {
+      if (useCache && translated) {
         const key = cacheKey(actualSourceLang, targetLang, text);
         cacheSet(key, translated);
       }
-      results[text] = translated;
+      results[text] = translated || text;
     } catch (e) {
-      // 翻译失败时回退到原文
+      console.warn('Single text translation error:', e);
       results[text] = text;
+      if (e.name === 'InvalidStateError' || e.message?.includes('destroyed')) {
+        translatorPool.delete(poolKey);
+      }
     }
   }
 
@@ -505,44 +693,56 @@ async function handleTestCustomLLM(request) {
 }
 
 async function handleTranslateText(text) {
-  const data = await chrome.storage.local.get(['isEnabled', 'sourceLang', 'targetLang']);
-  if (data.isEnabled === false) return { translations: {} };
-  const res = await handleTranslate({
-    texts: [text],
-    sourceLang: data.sourceLang || 'en',
-    targetLang: data.targetLang || 'zh'
-  });
-  
-  if (res.translations && res.translations[text] && res.translations[text] !== text) {
-    try {
-      const statData = await chrome.storage.local.get(['totalTranslates']);
-      const count = (statData.totalTranslates || 0) + 1;
-      await chrome.storage.local.set({ totalTranslates: count });
-    } catch (e) {}
+  if (!text || typeof text !== 'string') return { translations: {} };
+  try {
+    const data = await chrome.storage.local.get(['isEnabled', 'sourceLang', 'targetLang']);
+    if (data.isEnabled === false) return { translations: {} };
+    const res = await handleTranslate({
+      texts: [text],
+      sourceLang: data.sourceLang || 'en',
+      targetLang: data.targetLang || 'zh'
+    });
+    
+    const translatedText = res?.translations?.[text] || text;
+    if (translatedText && translatedText !== text) {
+      try {
+        const statData = await chrome.storage.local.get(['totalTranslates']);
+        const count = (statData.totalTranslates || 0) + 1;
+        await chrome.storage.local.set({ totalTranslates: count });
+      } catch (e) {}
+    }
+    
+    return { translations: { [text]: translatedText } };
+  } catch (err) {
+    console.error('handleTranslateText error:', err);
+    return { translations: { [text]: text }, error: err.message || String(err) };
   }
-  
-  return { translations: { [text]: res.translations[text] } };
 }
 
 async function handleSpeak({ text, lang }) {
-  chrome.tts.stop();
-  
-  const data = await chrome.storage.local.get(['ttsVoice', 'ttsRate', 'ttsPitch', 'ttsVolume']);
-  const options = {
-    rate: data.ttsRate !== undefined ? data.ttsRate : 1.0,
-    pitch: data.ttsPitch !== undefined ? data.ttsPitch : 1.0,
-    volume: data.ttsVolume !== undefined ? data.ttsVolume : 1.0
-  };
-  
-  if (data.ttsVoice) {
-    options.voiceName = data.ttsVoice;
-    chrome.tts.speak(text, options);
-  } else {
-    // Default to Google Translate TTS API via offscreen document
-    await setupOffscreenDocument();
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
-    chrome.runtime.sendMessage({ action: 'play_audio', url: url });
-  }
+  try {
+    chrome.tts.stop();
+    
+    const data = await chrome.storage.local.get(['ttsVoice', 'ttsRate', 'ttsPitch', 'ttsVolume']);
+    const options = {
+      rate: data.ttsRate !== undefined ? data.ttsRate : 1.0,
+      pitch: data.ttsPitch !== undefined ? data.ttsPitch : 1.0,
+      volume: data.ttsVolume !== undefined ? data.ttsVolume : 1.0
+    };
+    
+    if (data.ttsVoice) {
+      options.voiceName = data.ttsVoice;
+      chrome.tts.speak(text, options);
+    } else {
+      // Default to Google Translate TTS API via offscreen document
+      await setupOffscreenDocument();
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
+      chrome.runtime.sendMessage({ action: 'play_audio', url: url }).catch(() => {});
+    }
 
-  return { ok: true };
+    return { ok: true };
+  } catch (err) {
+    console.error('handleSpeak error:', err);
+    return { ok: false, error: err.message || String(err) };
+  }
 }
