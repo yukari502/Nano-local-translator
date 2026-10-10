@@ -1038,6 +1038,7 @@ async function checkTranslatorApi() {
     return true;
   }
 
+  // 1. Check background service worker API support
   try {
     const resp = await chrome.runtime.sendMessage({ type: 'checkApi' });
     if (resp?.available) {
@@ -1047,17 +1048,31 @@ async function checkTranslatorApi() {
       return true;
     }
   } catch (e) {}
+
+  // 2. Check window context API support
+  const localAvailable = (typeof window.Translator !== 'undefined' && !!window.Translator.create) ||
+                         (typeof window.translation !== 'undefined' && !!window.translation.createTranslator) ||
+                         (typeof window.ai !== 'undefined' && !!window.ai.translator && !!window.ai.translator.create);
+  if (localAvailable) {
+    apiStatus.textContent = '✓ Translator API available';
+    apiStatus.className = 'status-bar api-available';
+    translateBtn.disabled = false;
+    return true;
+  }
+
+  // 3. Fallback test translation verification
   try {
     const test = await chrome.runtime.sendMessage({
-      type: 'translate', texts: ['test'], sourceLang: 'en', targetLang: 'zh'
+      type: 'translate', texts: ['Hello'], sourceLang: 'en', targetLang: 'zh'
     });
-    if (test?.translations) {
+    if (test?.translations && !test.error && test.translations['Hello'] && test.translations['Hello'] !== 'Hello') {
       apiStatus.textContent = '✓ Translator API available';
       apiStatus.className = 'status-bar api-available';
       translateBtn.disabled = false;
       return true;
     }
   } catch (e) {}
+
   apiStatus.textContent = 'Translator API not available (Chrome 138+)';
   apiStatus.className = 'status-bar api-unavailable';
   translateBtn.disabled = true;

@@ -4,7 +4,7 @@
 
 Nano Local AI Translator is a lightning-fast, private web page translator powered entirely by Chrome's Built-in AI (Gemini Nano). It processes everything locally on your device—ensuring **maximum speed** (it’s genuinely fast!) and **100% privacy** since your data never leaves your machine.
 
-You can find it in [Chrome web store](https://chromewebstore.google.com/detail/bobljnncaioenhgjhpcnfghdoabocnim?utm_source=item-share-cb)
+You can find it at [Chrome web store](https://chromewebstore.google.com/detail/bobljnncaioenhgjhpcnfghdoabocnim?utm_source=item-share-cb)
 
 ## Features
 
