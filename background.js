@@ -355,15 +355,39 @@ function clearTranslatorPool() {
   translatorPool.clear();
 }
 
+const creatingPromises = new Map();
+let detectorInstance = null;
+let builtinTranslationQueue = Promise.resolve();
+
+function runBuiltinTranslationTask(taskFn) {
+  const next = builtinTranslationQueue.then(taskFn, taskFn);
+  builtinTranslationQueue = next.catch(() => {});
+  return next;
+}
+
+async function getOrCreateDetector() {
+  if (detectorInstance) return detectorInstance;
+  const detectorApi = getBuiltinDetectorApi();
+  if (!detectorApi) return null;
+  try {
+    detectorInstance = await detectorApi.create();
+    return detectorInstance;
+  } catch (e) {
+    return null;
+  }
+}
+
 function normalizeLangTag(lang) {
-  if (!lang) return 'en';
-  const l = String(lang).trim().toLowerCase();
+  if (!lang || typeof lang !== 'string') return 'en';
+  const l = lang.trim().toLowerCase();
+  if (!l || l === 'auto' || l === 'und' || l === 'unknown') return 'en';
   if (l === 'zh' || l === 'zh-cn' || l === 'zh-hans') return 'zh';
   if (l === 'zh-tw' || l === 'zh-hk' || l === 'zh-hant') return 'zh-Hant';
   if (l === 'iw') return 'he';
   if (l === 'in') return 'id';
   if (l === 'jw') return 'jv';
-  return l.split('-')[0];
+  const main = l.split('-')[0];
+  return main || 'en';
 }
 
 async function getOrCreateBuiltinTranslator(sourceLang, targetLang) {
@@ -375,55 +399,66 @@ async function getOrCreateBuiltinTranslator(sourceLang, targetLang) {
     return translatorPool.get(poolKey);
   }
 
-  const api = getBuiltinTranslationApi();
-  if (!api) {
-    throw new Error('Chrome Built-in Translator API not available in this browser');
+  if (creatingPromises.has(poolKey)) {
+    return await creatingPromises.get(poolKey);
   }
 
-  const monitorOpt = {
-    sourceLanguage: normSource,
-    targetLanguage: normTarget,
-    monitor(m) {
-      if (!m || typeof m.addEventListener !== 'function') return;
-      m.addEventListener('downloadprogress', (e) => {
-        const total = e.total || 0;
-        const loaded = e.loaded || 0;
-        const percent = total > 0 ? Math.round((loaded / total) * 100) : 0;
-        chrome.runtime.sendMessage({
-          type: 'model_download_progress',
-          loaded,
-          total,
-          percent,
-          sourceLang: normSource,
-          targetLang: normTarget
-        }).catch(() => {});
-      });
+  const p = (async () => {
+    const api = getBuiltinTranslationApi();
+    if (!api) {
+      throw new Error('Chrome Built-in Translator API not available in this browser');
     }
-  };
 
-  let instance = null;
-  // Primary attempt
+    const monitorOpt = {
+      sourceLanguage: normSource,
+      targetLanguage: normTarget,
+      monitor(m) {
+        if (!m || typeof m.addEventListener !== 'function') return;
+        m.addEventListener('downloadprogress', (e) => {
+          const total = e.total || 0;
+          const loaded = e.loaded || 0;
+          const percent = total > 0 ? Math.round((loaded / total) * 100) : 0;
+          chrome.runtime.sendMessage({
+            type: 'model_download_progress',
+            loaded,
+            total,
+            percent,
+            sourceLang: normSource,
+            targetLang: normTarget
+          }).catch(() => {});
+        });
+      }
+    };
+
+    let instance = null;
+    try {
+      instance = await api.create(monitorOpt);
+    } catch (err) {
+      const altSource = normSource === 'zh' ? 'zh-Hans' : normSource;
+      const altTarget = normTarget === 'zh' ? 'zh-Hans' : normTarget;
+      if (altSource !== normSource || altTarget !== normTarget) {
+        instance = await api.create({
+          ...monitorOpt,
+          sourceLanguage: altSource,
+          targetLanguage: altTarget
+        });
+      } else {
+        throw err;
+      }
+    }
+
+    if (instance) {
+      translatorPool.set(poolKey, instance);
+    }
+    return instance;
+  })();
+
+  creatingPromises.set(poolKey, p);
   try {
-    instance = await api.create(monitorOpt);
-  } catch (err) {
-    // If exact tag failed, try BCP 47 variant (e.g. 'zh-Hans')
-    const altSource = normSource === 'zh' ? 'zh-Hans' : normSource;
-    const altTarget = normTarget === 'zh' ? 'zh-Hans' : normTarget;
-    if (altSource !== normSource || altTarget !== normTarget) {
-      instance = await api.create({
-        ...monitorOpt,
-        sourceLanguage: altSource,
-        targetLanguage: altTarget
-      });
-    } else {
-      throw err;
-    }
+    return await p;
+  } finally {
+    creatingPromises.delete(poolKey);
   }
-
-  if (instance) {
-    translatorPool.set(poolKey, instance);
-  }
-  return instance;
 }
 
 async function handleCheckApi() {
@@ -460,52 +495,70 @@ async function handleTranslate(request) {
 
   let actualSourceLang = sourceLang;
   if (sourceLang === 'auto' && texts.length > 0) {
-    let detected = null;
-    const detectorApi = getBuiltinDetectorApi();
-    if (detectorApi) {
-      try {
-        const detector = await detectorApi.create();
-        const detectResults = await detector.detect(texts[0]);
-        if (detectResults && detectResults.length > 0) {
-          detected = detectResults[0].detectedLanguage.split('-')[0];
-        }
-      } catch (e) {
-        console.warn('Detector failed:', e);
-      }
-    }
+    const sampleCandidates = texts.filter(t => /[a-zA-Z\u00C0-\u024F\u4e00-\u9fa5\u3040-\u30ff]{3,}/.test(t));
+    const sampleText = (sampleCandidates[0] || texts[0] || '').slice(0, 300);
 
-    if (!detected) {
-      detected = await new Promise(resolve => {
-        if (chrome.i18n && chrome.i18n.detectLanguage) {
-          try {
-            chrome.i18n.detectLanguage(texts[0], (res) => {
-              if (chrome.runtime?.lastError) {
+    let detected = null;
+    if (sampleText.trim().length >= 2) {
+      const detector = await getOrCreateDetector();
+      if (detector) {
+        try {
+          const detectResults = await detector.detect(sampleText);
+          if (detectResults && detectResults.length > 0) {
+            const langCode = detectResults[0].detectedLanguage.split('-')[0].toLowerCase();
+            if (langCode && langCode !== 'und' && langCode !== 'unknown') {
+              detected = langCode;
+            }
+          }
+        } catch (e) {
+          console.warn('Detector failed:', e);
+        }
+      }
+
+      if (!detected) {
+        detected = await new Promise(resolve => {
+          if (chrome.i18n && chrome.i18n.detectLanguage) {
+            try {
+              chrome.i18n.detectLanguage(sampleText, (res) => {
+                if (chrome.runtime?.lastError) {
+                  resolve('en');
+                  return;
+                }
+                if (res && res.languages && res.languages.length > 0) {
+                  const lang = res.languages[0].language.split('-')[0].toLowerCase();
+                  if (lang && lang !== 'und') {
+                    resolve(lang);
+                    return;
+                  }
+                }
                 resolve('en');
-                return;
-              }
-              if (res && res.languages && res.languages.length > 0) {
-                resolve(res.languages[0].language.split('-')[0]);
-              } else {
-                resolve('en');
-              }
-            });
-          } catch (e) {
+              });
+            } catch (e) {
+              resolve('en');
+            }
+          } else {
             resolve('en');
           }
-        } else {
-          resolve('en');
-        }
-      });
+        });
+      }
     }
     actualSourceLang = detected || 'en';
+    if (!actualSourceLang || actualSourceLang === 'und' || actualSourceLang === 'auto') {
+      actualSourceLang = 'en';
+    }
   }
 
-  // If actual source language equals target language, return originals directly
+  // If actual source language equals target language, verify if texts contain other language characters
   if (normalizeLangTag(actualSourceLang) === normalizeLangTag(targetLang)) {
-    for (const text of texts) {
-      results[text] = text;
+    const hasOtherLangChars = texts.some(t => /[a-zA-Z]{3,}/.test(t));
+    if (!hasOtherLangChars) {
+      for (const text of texts) {
+        results[text] = text;
+      }
+      return { translations: results };
     }
-    return { translations: results };
+    // Correct erroneous same-language detection
+    actualSourceLang = targetLang === 'en' ? 'zh' : 'en';
   }
 
   const batch = [];
@@ -565,42 +618,54 @@ async function handleTranslate(request) {
     return { translations: results };
   }
 
-  // Engine 1: Chrome Built-in AI (Gemini Nano)
+  // Engine 1: Chrome Built-in AI (Gemini Nano) serialized via queue
   const builtinApi = getBuiltinTranslationApi();
   if (!builtinApi) {
     for (const text of batch) results[text] = text;
     return { translations: results, error: 'Translator API not available in this browser context' };
   }
 
-  let translator = null;
-  const poolKey = `${normalizeLangTag(actualSourceLang)}->${normalizeLangTag(targetLang)}`;
-  try {
-    translator = await getOrCreateBuiltinTranslator(actualSourceLang, targetLang);
-  } catch (err) {
-    console.error('Failed to create Translator instance:', err);
-    translatorPool.delete(poolKey);
-    for (const text of batch) results[text] = text;
-    return { translations: results, error: err.message || String(err) };
-  }
-
-  for (const text of batch) {
+  return await runBuiltinTranslationTask(async () => {
+    let translator = null;
+    const poolKey = `${normalizeLangTag(actualSourceLang)}->${normalizeLangTag(targetLang)}`;
     try {
-      const translated = await translator.translate(text);
-      if (useCache && translated) {
-        const key = cacheKey(actualSourceLang, targetLang, text);
-        cacheSet(key, translated);
-      }
-      results[text] = translated || text;
-    } catch (e) {
-      console.warn('Single text translation error:', e);
-      results[text] = text;
-      if (e.name === 'InvalidStateError' || e.message?.includes('destroyed')) {
+      translator = await getOrCreateBuiltinTranslator(actualSourceLang, targetLang);
+    } catch (err) {
+      console.error('Failed to create Translator instance:', err);
+      if (normalizeLangTag(actualSourceLang) !== 'en' && normalizeLangTag(targetLang) !== 'en') {
+        try {
+          translator = await getOrCreateBuiltinTranslator('en', targetLang);
+        } catch (e2) {
+          translatorPool.delete(poolKey);
+          for (const text of batch) results[text] = text;
+          return { translations: results, error: err.message || String(err) };
+        }
+      } else {
         translatorPool.delete(poolKey);
+        for (const text of batch) results[text] = text;
+        return { translations: results, error: err.message || String(err) };
       }
     }
-  }
 
-  return { translations: results };
+    for (const text of batch) {
+      try {
+        const translated = await translator.translate(text);
+        if (useCache && translated) {
+          const key = cacheKey(actualSourceLang, targetLang, text);
+          cacheSet(key, translated);
+        }
+        results[text] = translated || text;
+      } catch (e) {
+        console.warn('Single text translation error:', e);
+        results[text] = text;
+        if (e.name === 'InvalidStateError' || e.message?.includes('destroyed')) {
+          translatorPool.delete(poolKey);
+        }
+      }
+    }
+
+    return { translations: results };
+  });
 }
 
 // ── OpenAI-Compatible Custom Translation ──────────────
