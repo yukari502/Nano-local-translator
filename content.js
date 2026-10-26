@@ -340,18 +340,32 @@ function gatherTexts(root) {
 
 // ── Translation marks ─────────────────────────────────
 
-const TRANS_MARK = '__ai_translated__';
+let translatedNodes = new WeakSet();
 
 function markTextNode(node) {
-  if (node.nodeType === Node.TEXT_NODE) {
-    // Can't mark textContent directly, so mark the parent element
-    node.parentElement?.setAttribute(TRANS_MARK, '');
+  if (node) {
+    translatedNodes.add(node);
   }
 }
 
 function isTextTranslated(node) {
-  return node.parentElement?.hasAttribute(TRANS_MARK) ||
+  if (!node) return false;
+  return translatedNodes.has(node) ||
     node.parentElement?.closest('.ai-pair') !== null;
+}
+
+const BLOCK_TAGS = new Set([
+  'P', 'DIV', 'ARTICLE', 'SECTION', 'MAIN', 'ASIDE', 'NAV', 'HEADER', 'FOOTER',
+  'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'TD', 'TH', 'FIGCAPTION', 'DD', 'DT'
+]);
+
+function getBlockContainer(node) {
+  let curr = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+  while (curr && curr !== document.body && curr !== document.documentElement) {
+    if (BLOCK_TAGS.has(curr.tagName)) return curr;
+    curr = curr.parentElement;
+  }
+  return (node.nodeType === Node.TEXT_NODE ? node.parentElement : node) || document.body;
 }
 
 // ── Translate page (Viewport-First Active Dynamic Translation) ──
@@ -434,11 +448,32 @@ function isInViewport(el) {
   const vh = window.innerHeight || document.documentElement.clientHeight;
   const vw = window.innerWidth || document.documentElement.clientWidth;
   return (
-    rect.bottom >= -100 &&
-    rect.top <= vh + 150 &&
-    rect.right >= 0 &&
-    rect.left <= vw
+    rect.bottom >= -200 &&
+    rect.top <= vh + 300 &&
+    rect.right >= -50 &&
+    rect.left <= vw + 50
   );
+}
+
+let isBatchRunning = false;
+let scrollCheckTimeout = null;
+
+function onWindowScroll() {
+  if (!isTranslated || elementsToObserve.size === 0) return;
+  if (scrollCheckTimeout) return;
+  scrollCheckTimeout = setTimeout(() => {
+    scrollCheckTimeout = null;
+    let found = false;
+    for (const [el, entries] of elementsToObserve.entries()) {
+      if (isInViewport(el)) {
+        pendingPageTranslations.add(el);
+        found = true;
+      }
+    }
+    if (found) {
+      schedulePageTranslationBatch();
+    }
+  }, 200);
 }
 
 function schedulePageTranslationBatch() {
@@ -447,10 +482,15 @@ function schedulePageTranslationBatch() {
   pageTranslateTimeout = setTimeout(() => {
     pageTranslateTimeout = null;
     processPageTranslationBatch();
-  }, 150);
+  }, 100);
 }
 
 async function processPageTranslationBatch() {
+  if (!isTranslated) return;
+  if (isBatchRunning) {
+    schedulePageTranslationBatch();
+    return;
+  }
   if (pendingPageTranslations.size === 0) {
     if (activeBatchCount === 0) {
       isTranslating = false;
@@ -459,50 +499,52 @@ async function processPageTranslationBatch() {
     return;
   }
 
+  isBatchRunning = true;
   isTranslating = true;
   activeBatchCount++;
   notifyStatusChange();
 
-  const elements = Array.from(pendingPageTranslations);
-  pendingPageTranslations.clear();
+  try {
+    const elements = Array.from(pendingPageTranslations);
+    pendingPageTranslations.clear();
 
-  const entriesToTranslate = [];
-  for (const el of elements) {
-    if (elementsToObserve.has(el)) {
-      entriesToTranslate.push(...elementsToObserve.get(el));
-      elementsToObserve.delete(el);
+    const entriesToTranslate = [];
+    for (const el of elements) {
+      if (elementsToObserve.has(el)) {
+        entriesToTranslate.push(...elementsToObserve.get(el));
+        elementsToObserve.delete(el);
+      }
     }
-  }
 
-  const validEntries = entriesToTranslate.filter(e => e.node.parentNode && !isTextTranslated(e.node));
-  if (validEntries.length === 0) {
-    activeBatchCount--;
-    if (activeBatchCount === 0 && pendingPageTranslations.size === 0) {
-      isTranslating = false;
-      notifyStatusChange();
+    const validEntries = entriesToTranslate.filter(e => e.node.parentNode && !isTextTranslated(e.node));
+    if (validEntries.length === 0) {
+      activeBatchCount--;
+      return;
     }
-    return;
-  }
 
-  const CHUNK = 20;
+    const CHUNK = 20;
 
-  for (let i = 0; i < validEntries.length; i += CHUNK) {
-    if (!isTranslated) break;
+    for (let i = 0; i < validEntries.length; i += CHUNK) {
+      if (!isTranslated) break;
 
-    const chunkEntries = validEntries.slice(i, i + CHUNK);
-    const chunkTexts = chunkEntries.map(e => e.text);
+      const chunkEntries = validEntries.slice(i, i + CHUNK);
+      const chunkTexts = chunkEntries.map(e => e.text);
 
-    try {
-      const resp = await chrome.runtime.sendMessage({
-        type: 'translate',
-        texts: chunkTexts,
-        sourceLang: currentSource,
-        targetLang: currentTarget
-      });
+      let resp = null;
+      try {
+        resp = await chrome.runtime.sendMessage({
+          type: 'translate',
+          texts: chunkTexts,
+          sourceLang: currentSource,
+          targetLang: currentTarget
+        });
+      } catch (e) {
+        console.warn('Translation batch error:', e);
+      }
 
       if (!isTranslated) break;
 
-      if (resp?.translations) {
+      if (resp?.translations && !resp.error) {
         let chunkApplied = 0;
         for (const { node, text } of chunkEntries) {
           const translated = resp.translations[text];
@@ -516,21 +558,36 @@ async function processPageTranslationBatch() {
             markTextNode(node);
           } else {
             applyBilingual(node, text, translated);
+            markTextNode(node);
           }
           chunkApplied++;
         }
         translatedCount += chunkApplied;
         notifyStatusChange();
+      } else {
+        // Translation failed or error returned: put unapplied nodes back into elementsToObserve
+        for (const item of chunkEntries) {
+          if (item.node.parentNode && !isTextTranslated(item.node)) {
+            const container = getBlockContainer(item.node);
+            if (!elementsToObserve.has(container)) {
+              elementsToObserve.set(container, []);
+              if (pageTranslationObserver) pageTranslationObserver.observe(container);
+            }
+            elementsToObserve.get(container).push(item);
+          }
+        }
       }
-    } catch (e) {
-      console.warn('Translation batch error:', e);
     }
-  }
 
-  activeBatchCount--;
-  if (activeBatchCount === 0 && pendingPageTranslations.size === 0) {
-    isTranslating = false;
-    notifyStatusChange();
+    activeBatchCount--;
+  } finally {
+    isBatchRunning = false;
+    if (pendingPageTranslations.size > 0) {
+      schedulePageTranslationBatch();
+    } else if (activeBatchCount === 0) {
+      isTranslating = false;
+      notifyStatusChange();
+    }
   }
 }
 
@@ -539,13 +596,13 @@ function observeNewNodes(root) {
   const textEntries = gatherTexts(root);
   const newElements = new Map();
   for (const entry of textEntries) {
-    const parent = entry.node.parentElement;
-    if (!parent) continue;
-    if (!elementsToObserve.has(parent) && !newElements.has(parent)) {
-      newElements.set(parent, []);
+    const container = getBlockContainer(entry.node);
+    if (!container) continue;
+    if (!elementsToObserve.has(container) && !newElements.has(container)) {
+      newElements.set(container, []);
     }
-    const map = newElements.has(parent) ? newElements : elementsToObserve;
-    map.get(parent).push(entry);
+    const map = newElements.has(container) ? newElements : elementsToObserve;
+    map.get(container).push(entry);
   }
 
   let hasViewportNew = false;
@@ -576,6 +633,9 @@ async function translatePage(mode, sourceLang, targetLang) {
   isTranslating = true;
   notifyStatusChange();
 
+  window.removeEventListener('scroll', onWindowScroll);
+  window.addEventListener('scroll', onWindowScroll, { passive: true });
+
   if (pageTranslationObserver) pageTranslationObserver.disconnect();
   if (pageTranslationMutationObserver) pageTranslationMutationObserver.disconnect();
   pendingPageTranslations.clear();
@@ -594,19 +654,19 @@ async function translatePage(mode, sourceLang, targetLang) {
     if (triggered) {
       schedulePageTranslationBatch();
     }
-  }, { rootMargin: '300px 0px 300px 0px' });
+  }, { rootMargin: '400px 0px 400px 0px' });
 
-  // Gather texts across body
+  // Gather texts across body grouped by block container
   const textEntries = gatherTexts(document.body);
   const newElements = new Map();
   for (const entry of textEntries) {
-    const parent = entry.node.parentElement;
-    if (!parent) continue;
-    if (!elementsToObserve.has(parent) && !newElements.has(parent)) {
-      newElements.set(parent, []);
+    const container = getBlockContainer(entry.node);
+    if (!container) continue;
+    if (!elementsToObserve.has(container) && !newElements.has(container)) {
+      newElements.set(container, []);
     }
-    const map = newElements.has(parent) ? newElements : elementsToObserve;
-    map.get(parent).push(entry);
+    const map = newElements.has(container) ? newElements : elementsToObserve;
+    map.get(container).push(entry);
   }
 
   const immediateElements = [];
@@ -682,6 +742,9 @@ function restorePage() {
   isTranslated = false;
   isTranslating = false;
   activeBatchCount = 0;
+  isBatchRunning = false;
+
+  window.removeEventListener('scroll', onWindowScroll);
 
   if (pageTranslationObserver) {
     pageTranslationObserver.disconnect();
@@ -697,6 +760,7 @@ function restorePage() {
   }
   pendingPageTranslations.clear();
   elementsToObserve.clear();
+  translatedNodes = new WeakSet();
 
   // 1. Restore text nodes modified in translate-only mode
   for (const [node, original] of originalMap.entries()) {
