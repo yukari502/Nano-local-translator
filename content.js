@@ -340,6 +340,7 @@ function gatherTexts(root) {
 
 // ── Translation marks ─────────────────────────────────
 
+const TRANS_MARK = '__ai_translated__';
 let translatedNodes = new WeakSet();
 
 function markTextNode(node) {
