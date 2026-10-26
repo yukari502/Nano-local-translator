@@ -2,6 +2,32 @@
 
 const cache = new Map();
 const CACHE_MAX = 5000;
+let cacheSaveTimeout = null;
+
+// Load persistent cache from chrome.storage.local on startup
+(async () => {
+  try {
+    const data = await chrome.storage.local.get(['persistentTranslationCache']);
+    if (data.persistentTranslationCache && typeof data.persistentTranslationCache === 'object') {
+      for (const [key, val] of Object.entries(data.persistentTranslationCache)) {
+        cache.set(key, val);
+      }
+    }
+  } catch (e) {}
+})();
+
+function scheduleCachePersist() {
+  if (cacheSaveTimeout) return;
+  cacheSaveTimeout = setTimeout(async () => {
+    cacheSaveTimeout = null;
+    try {
+      // Retain top 2000 most recent items to stay within storage limits
+      const entries = Array.from(cache.entries()).slice(-2000);
+      const obj = Object.fromEntries(entries);
+      await chrome.storage.local.set({ persistentTranslationCache: obj });
+    } catch (e) {}
+  }, 2000);
+}
 
 function cacheKey(sourceLang, targetLang, text) {
   return sourceLang + '\n' + targetLang + '\n' + text;
@@ -22,6 +48,7 @@ function cacheSet(key, val) {
     cache.delete(oldest);
   }
   cache.set(key, val);
+  scheduleCachePersist();
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -37,6 +64,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'clearCache') {
     cache.clear();
     clearTranslatorPool();
+    chrome.storage.local.remove(['persistentTranslationCache']).catch(() => {});
     sendResponse({ ok: true });
     return true;
   }
@@ -129,8 +157,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 let creatingOffscreen;
+let offscreenIdleTimer = null;
+
+function resetOffscreenIdleTimer() {
+  if (offscreenIdleTimer) clearTimeout(offscreenIdleTimer);
+  offscreenIdleTimer = setTimeout(async () => {
+    try {
+      if (await chrome.offscreen.hasDocument()) {
+        await chrome.offscreen.closeDocument();
+      }
+    } catch (e) {}
+  }, 60000); // 60s idle timeout
+}
 
 async function setupOffscreenDocument() {
+  resetOffscreenIdleTimer();
   const path = 'offscreen.html';
   if (await chrome.offscreen.hasDocument()) return;
   
@@ -153,11 +194,13 @@ async function handleOcrRequest(request) {
     const lang = data.sourceLang || 'en';
     
     await setupOffscreenDocument();
+    resetOffscreenIdleTimer();
     const response = await chrome.runtime.sendMessage({
       action: 'do_ocr',
       imageData: request.imageData,
       lang: lang
     });
+    resetOffscreenIdleTimer();
     
     if (!response || !response.success) {
       throw new Error(response ? response.error : 'Unknown OCR error');
@@ -337,19 +380,38 @@ async function getOrCreateBuiltinTranslator(sourceLang, targetLang) {
     throw new Error('Chrome Built-in Translator API not available in this browser');
   }
 
+  const monitorOpt = {
+    sourceLanguage: normSource,
+    targetLanguage: normTarget,
+    monitor(m) {
+      if (!m || typeof m.addEventListener !== 'function') return;
+      m.addEventListener('downloadprogress', (e) => {
+        const total = e.total || 0;
+        const loaded = e.loaded || 0;
+        const percent = total > 0 ? Math.round((loaded / total) * 100) : 0;
+        chrome.runtime.sendMessage({
+          type: 'model_download_progress',
+          loaded,
+          total,
+          percent,
+          sourceLang: normSource,
+          targetLang: normTarget
+        }).catch(() => {});
+      });
+    }
+  };
+
   let instance = null;
   // Primary attempt
   try {
-    instance = await api.create({
-      sourceLanguage: normSource,
-      targetLanguage: normTarget
-    });
+    instance = await api.create(monitorOpt);
   } catch (err) {
     // If exact tag failed, try BCP 47 variant (e.g. 'zh-Hans')
     const altSource = normSource === 'zh' ? 'zh-Hans' : normSource;
     const altTarget = normTarget === 'zh' ? 'zh-Hans' : normTarget;
     if (altSource !== normSource || altTarget !== normTarget) {
       instance = await api.create({
+        ...monitorOpt,
         sourceLanguage: altSource,
         targetLanguage: altTarget
       });

@@ -1,93 +1,119 @@
 # Nano Local AI Translator Technical Manual
 
 ## 1. Project Overview
-Nano Local AI Translator (Bilingual Web Reader) is a lightweight, privacy-focused Chrome extension that leverages Chrome's Built-in AI (Translator API) to translate web pages locally. It operates entirely on-device without relying on external cloud services.
+Nano Local AI Translator (Bilingual Web Reader) is a lightweight, privacy-focused Chrome extension that leverages Chrome's Built-in AI (Translator API / Gemini Nano) to translate web pages locally. It operates entirely on-device without relying on external cloud services.
 
 ## 2. Technology Stack
 - **Extension Framework**: Chrome Extension Manifest V3 (MV3)
-- **Core Languages**: Vanilla HTML, CSS, JavaScript (No frameworks like React/Vue)
-- **Core APIs**: Chrome Built-in Translator API (Gemini Nano), Chrome TTS API, Chrome Storage API
+- **Core Languages**: Vanilla HTML, CSS, JavaScript (Zero external framework overhead)
+- **Core APIs**:
+  - Chrome Built-in Translator API (`window.ai.translator` / `Translator.create`)
+  - Chrome Built-in LanguageDetector API (`window.ai.languageDetector`)
+  - Chrome Storage API (`chrome.storage.local`)
+  - Chrome TTS & Offscreen API (`chrome.tts`, `chrome.offscreen`)
+  - Chrome Clipboard API (`navigator.clipboard`)
 
 ## 3. Project Structure
 ```text
 .
-├── manifest.json       # Extension configuration file (permissions, scripts)
-├── background.js       # Service Worker for calling the Translator API, caching, and TTS
-├── content.js          # Content script injected into pages (DOM traversal, UI interactions)
+├── manifest.json       # Extension configuration file (permissions, shortcuts, content scripts)
+├── background.js       # Service Worker: API calls, persistent LRU caching, model download monitor, TTS
+├── content.js          # Injected content script: DOM traversal, streaming translation, reader capsule, bubble UI
 ├── popup/
-│   ├── popup.html      # Popup UI structure
-│   ├── popup.css       # Popup UI styling
-│   └── popup.js        # Popup logic (user settings, i18n, interactions)
-├── img/                # Extension icons and static assets
-├── README.md           # Project description
+│   ├── popup.html      # Popup UI structure (controls, settings, download progress)
+│   ├── popup.css       # Popup styling, dark mode, animation tokens
+│   └── popup.js        # Popup logic: live status synchronization, i18n, setting persistence
+├── img/                # Extension icons, QR codes, and static visual assets
+├── README.md           # Project description & user guide
+├── manual.md           # Technical manual and developer reference
 └── SystemPrompt.md     # AI system prompt for development
 ```
 
-## 4. Core Features & Technical Implementation
+## 4. Core Features & Technical Architecture
 
-### 4.1 Web Page Translation Mechanism (DOM Traversal & Mutation)
-- **Text Extraction**: Uses `TreeWalker` in `content.js` to traverse the DOM, filtering out non-translatable tags (e.g., `SCRIPT`, `STYLE`, `CODE`) and hidden elements, collecting valid text nodes.
-- **Batch Processing**: Extracted texts are sent to `background.js` in chunks (currently set to 20) to prevent blocking requests or oversized data transfer.
-- **Auto-Detect Language**: Utilizes Chrome's built-in AI `LanguageDetector` API (with a stable `chrome.i18n` fallback) to seamlessly detect the source language on-the-fly when set to "Auto Detect".
-- **Execution (Dual Engine Architecture)**:
-  - **Chrome Built-in Engine (Default)**: `background.js` instantiates the local translator via `Translator.create` and translates chunks iteratively using `translator.translate()`.
-  - **Custom OpenAI-Compatible Engine (Fallback / Power User)**: Supports local inference engines (Ollama, LM Studio) and standard cloud endpoints (`/v1/chat/completions`). Features configurable concurrency limits (1-10 simultaneous requests) and batch context chunking (2-30 items per prompt) to maximize throughput while avoiding GPU VRAM overload.
-- **DOM Mutation (Modes)**:
-  - **Translate Only**: Modifies the `textContent` of nodes directly. Uses a `Map` (`originalMap`) to store original text for restoration.
-  - **Bilingual**: Replaces original text nodes with a `span.ai-pair` element containing both original and translated text side-by-side.
+### 4.1 Viewport-First Active Streaming Translation (活动式流式翻译)
+- **Problem Solved**: Traditional extensions parse and translate the entire document all-at-once, resulting in significant delays, unresponsive pages on long articles, and desynchronized button states.
+- **Viewport-First Partitioning**:
+  - Upon clicking "Translate Page" or pressing `Alt+T`, `content.js` partitions text nodes into immediate viewport elements (`isInViewport(el)`) and offscreen elements.
+  - Viewport elements are translated immediately in prioritized small batches (`CHUNK = 20`), streaming translated text into the DOM as chunks resolve.
+- **Lazy Dynamic Traversal**:
+  - Offscreen elements are registered with an `IntersectionObserver` configured with a 300px lookahead buffer (`rootMargin: '300px 0px 300px 0px'`).
+  - As the user scrolls downwards, entering elements trigger debounced batch translation requests.
+- **Dynamic Content Support**:
+  - A `MutationObserver` watches for dynamically added nodes (infinite scroll feeds, single-page applications) and automatically schedules them for observation.
+- **Synchronized Status Bus**:
+  - Status updates (`isTranslated`, `isTranslating`, `translatedCount`) are dispatched via `page_translation_status` messages, updating both the popup UI (showing `Translating...` with spinner) and the on-page floating reader capsule.
+  - The Translate Page / Restore Original button serves as the toggle for active translation.
 
-### 4.2 Select-to-Translate, Hover Translation & TTS
-- **Select-to-Translate**: `content.js` listens to the `mouseup` event to capture user-selected text (`window.getSelection()`).
-- **Hover Translation**: `content.js` uses `mousemove` to detect when a user hovers over a word for 300ms. It isolates the hovered word using DOM ranges and displays its translation.
-- **Tooltip UI**: Dynamically creates a DOM element positioned near the cursor. Adapts to the system's dark/light mode automatically. Includes dedicated TTS speaker icons for both the original and translated text.
-- **TTS Integration**: 
-  - `background.js` uses `chrome.tts.speak` for local audio playback when an appropriate voice is available.
-  - As a fallback for maximum compatibility, it utilizes the Google Translate TTS API via an `offscreen` document, automatically aligning with the target language for robust pronunciation without needing local voice packs.
+### 4.2 Selection Bubble, Trigger Modes & Glassmorphic Tooltip
+- **Floating Bubble**:
+  - On text selection (`mouseup`), a mini spherical button (`#ai-web-translator-bubble`) appears next to the cursor, avoiding unwanted tooltip popups when users merely copy or highlight text.
+  - Clicking the bubble triggers `showSelectionTranslation`, opening the translation card.
+- **Configurable Trigger Modes (`s2tTriggerMode`)**:
+  - `bubble`: Default behavior; displays floating bubble on select.
+  - `alt`: Only triggers when the user holds the `Alt` key while selecting text.
+  - `ctrl`: Only triggers when the user holds `Ctrl` (or `Cmd` on macOS) while selecting text.
+  - `direct`: Bypasses the bubble and directly opens the tooltip translation card.
+- **Glassmorphic UI & 1-Click Copy**:
+  - The tooltip is built with `backdrop-filter: blur(16px)` and supports automated dark mode switching.
+  - Features an integrated copy button (`📋`) that uses `navigator.clipboard.writeText` and renders an animated transient confirmation Toast (`.ai-tooltip-toast`).
 
-### 4.3 YouTube Dual Subtitles
-- **Caption Interception**: Injects a `MutationObserver` in `content.js` specifically on YouTube pages to watch the `.ytp-caption-window-container` element.
-- **Dynamic Injection**: Automatically intercepts native subtitles (Closed Captions) as they appear, translates them via the background script, and dynamically injects `.ai-yt-sub` spans.
-- **Customization**: Supports extensive user customization for the injected subtitles, including color inheritance mode (Original vs Custom), text opacity, and vertical placement (Above vs Below original).
+### 4.3 On-Page Floating Reader Capsule (`#ai-reader-capsule`)
+- **Lifecycle & Insertion**:
+  - Injected directly into the DOM when page translation is active and `showReaderCapsule` is enabled.
+- **Real-Time Indicators & Controls**:
+  - Displays dynamic status: pulsing indicator when active batches are translating, and total translated node count when idle.
+  - Embedded Mode Switcher: 1-click toggle between Single Translation (`translate-only`) and Bilingual Comparison (`bilingual`).
+  - Instant Restore (`✕`): Immediately removes all bilingual spans/restores original text and disengages active observers.
 
-### 4.4 Caching Mechanism
-- **Design**: Implements an in-memory LRU (Least Recently Used) cache in `background.js`.
-- **Purpose**: Reduces redundant API calls to the built-in AI, speeding up translation.
-- **Implementation**: Stores translations in a `Map` with a maximum capacity (`CACHE_MAX = 5000`). Cache keys consist of source language, target language, and original text. Can be toggled off in settings.
+### 4.4 Persistent Offline Caching & Resource Management
+- **Cross-Restart Persistent Cache**:
+  - To prevent cache loss caused by MV3 Service Worker auto-termination (~30s idle), `background.js` synchronizes its in-memory LRU cache with `chrome.storage.local` (`persistentTranslationCache`) using a 2-second debounce.
+  - On startup, the service worker restores cached translations into memory instantly.
+- **Offscreen Document Auto-Close**:
+  - The offscreen document (used for TTS audio rendering) automatically terminates after 60 seconds of inactivity to conserve system memory and browser processes.
+- **Model Download Progress**:
+  - Listens to Chrome Translator's `monitor.addEventListener('downloadprogress')` and broadcasts progress (`loaded`, `total`, `percent`) to display an animated progress bar in the popup UI.
 
-### 4.5 State Management & Persistence
-- **API**: Utilizes `chrome.storage.local` to persist user preferences.
-- **Stored Data**: 
-  - Extension toggle (`isEnabled`)
-  - UI Language (`uiLang`)
-  - Translation languages (`sourceLang`, `targetLang`)
-  - Display mode (`mode`: `translate-only` / `bilingual`)
-  - Select-to-translate & Hover toggles (`s2tTranslate`, `hoverTranslate`)
-  - YouTube Subtitles configuration (`youtubeDualSubs`, `ytSubColorMode`, `ytSubColor`, `ytSubOpacity`, `ytSubPosition`)
-  - TTS preferences (`ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`)
-  - Translation usage statistics (`totalTranslates`)
+### 4.5 Domain Exclusion Filtering
+- **Mechanism**:
+  - Maintains user-defined domain exclusion lists (`excludedDomains`) in `chrome.storage.local`.
+  - Content scripts evaluate `window.location.hostname` against the exclusion list.
+  - If a domain matches, page translation, selection bubbles, hover lookups, and subtitle interception are completely bypassed.
 
-### 4.6 Internationalization (i18n) & UI
-- `popup.js` maintains an internal JavaScript dictionary (`I18N`) supporting multiple languages (en, zh, zh-Hant, ja, es, fr, de, ru, ar).
-- Dynamically updates text for DOM nodes tagged with `data-i18n` or `data-i18n-placeholder` based on user selection or browser language.
-- Features a clean, unified settings panel with collapsible sections and micro-animations for an improved user experience.
+### 4.6 YouTube Dual Subtitles with Progressive Deduplication
+- **Caption Interception**:
+  - Uses `MutationObserver` on `.ytp-caption-window-container`.
+- **Progressive Prefix Deduplication**:
+  - Streaming YouTube subtitles often arrive word-by-word (e.g., "The weather" → "The weather is" → "The weather is great").
+  - `handleNewSubtitle` detects growing prefix sequences within a 150ms window, delaying batch processing until phrase boundaries settle and avoiding duplicate translations.
+- **Custom Styling**:
+  - Supports custom font color, opacity, and positioning (above or below original captions).
 
-## 5. Key APIs & Dependencies
-- **Requirements**: Google Chrome version 138 or higher.
-- **Experimental Flags**:
-  Users must enable the following in `chrome://flags` for the Translator API to work:
-  - `#translation-api` (Enabled)
-  - `#optimization-guide-on-device-model` (Enabled BypassPrefRequirement)
+### 4.7 Dual Engine Architecture (Chrome Built-in vs. Custom LLM)
+- **Chrome Built-in AI**: Zero configuration, 100% on-device Gemini Nano inference.
+- **Custom OpenAI-Compatible Engine**:
+  - Targets local inference backends (Ollama, LM Studio) or OpenAI-compatible endpoints (`/v1/chat/completions`).
+  - Offers user-configurable concurrency limits (1-10 simultaneous requests) and batch context limits (2-30 sentences per request).
+
+## 5. Key APIs & Requirements
+- **Browser Requirement**: Google Chrome version 138 or higher.
+- **Flags to Enable**:
+  - `chrome://flags/#translation-api` -> Enabled
+  - `chrome://flags/#optimization-guide-on-device-model` -> Enabled BypassPrefRequirement
 - **Required Manifest Permissions**:
-  - `storage`: For saving settings.
-  - `activeTab`: For running content scripts on the current page.
-  - `tts`: For text-to-speech functionality.
+  - `storage`: For configuration and persistent translation cache.
+  - `activeTab`: For content script communication and tab management.
+  - `tts`: For text-to-speech pronunciation.
+  - `offscreen`: For fallback audio playback.
+  - `clipboardWrite`: For 1-click translation copying.
 
-## 6. Development & Debugging Guide
-1. **Testing Translator API**:
-   You can verify `Translator.create()` availability in the browser console. The popup interface also performs an active check.
-2. **Debugging Service Worker**:
-   Navigate to `chrome://extensions/` and click the "Service Worker" link for this extension. This opens DevTools to view `background.js` logs and API requests.
-3. **Debugging Content Scripts**:
-   Press F12 on any active webpage to inspect the DOM structure injected by `content.js` and view console logs.
-4. **Built-in Model Status**:
-   Visit `chrome://on-device-translation-internals` to check the download progress and status of local translation models.
+## 6. Developer & Debugging Guide
+1. **Testing Translator API Availability**:
+   Run `await window.ai.translator.capabilities()` or `await window.translation.canTranslate({sourceLanguage:'en', targetLanguage:'zh'})` in DevTools console.
+2. **Debugging Background Service Worker**:
+   Open `chrome://extensions/` and click the "service worker" link to view background logs and persistent cache status.
+3. **Debugging Content Scripts & Capsule**:
+   Inspect active pages with DevTools (F12) to verify `elementsToObserve`, `pendingPageTranslations`, and DOM mutation events.
+4. **Monitoring Local Model Downloads**:
+   Visit `chrome://on-device-translation-internals` to monitor local component downloading, model status, and cache partitions.

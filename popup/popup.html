@@ -23,13 +23,20 @@
     <!-- ════ Translate Tab ════ -->
     <div id="translateTab" class="tab-pane">
       <div id="apiStatus" class="status-bar">Checking API availability...</div>
+      <div id="modelDownloadContainer" class="download-container" style="display:none;">
+        <div class="download-bar">
+          <div id="modelProgressBar" class="download-progress" style="width: 0%;"></div>
+        </div>
+        <div id="modelDownloadText" class="download-text">Downloading model... 0%</div>
+      </div>
 
       <div class="section">
-        <div class="row">
+        <div class="row" style="align-items: flex-end;">
           <div class="field">
             <label data-i18n="sourceLang">Source Language</label>
             <select id="sourceLang"></select>
           </div>
+          <button id="swapLangBtn" class="icon-btn swap-btn" title="Swap languages (⇄)" style="margin-bottom: 2px;">⇄</button>
           <div class="field">
             <label data-i18n="targetLang">Target Language</label>
             <select id="targetLang"></select>
@@ -61,12 +68,23 @@
         <label data-i18n="optionalFeaturesTitle">Optional Features</label>
         <div class="s2t-container" style="display: flex; flex-direction: column; gap: 8px; position: relative;">
           
-          <div class="feature-item" id="item-s2tTranslate" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; transition: transform 0.3s ease;">
-            <span style="font-size: 13px;" data-i18n="s2tTranslate">Select Translation</span>
-            <label class="switch">
-              <input type="checkbox" id="s2tTranslateSwitch" checked>
-              <span class="slider round"></span>
-            </label>
+          <div class="feature-item" id="item-s2tTranslate" style="display: flex; flex-direction: column; gap: 4px; padding: 4px 0; transition: transform 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 13px;" data-i18n="s2tTranslate">Select Translation</span>
+              <label class="switch">
+                <input type="checkbox" id="s2tTranslateSwitch" checked>
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div id="s2tTriggerOptions" style="display: flex; justify-content: space-between; align-items: center; padding-left: 2px;">
+              <span style="font-size: 11px; color: #666;" data-i18n="s2tTrigger">Trigger Mode</span>
+              <select id="s2tTriggerMode" style="width: auto; padding: 2px 20px 2px 6px; font-size: 11px; height: 24px;">
+                <option value="bubble" data-i18n="s2tTriggerBubble">Show Bubble</option>
+                <option value="alt" data-i18n="s2tTriggerAlt">Alt + Select</option>
+                <option value="ctrl" data-i18n="s2tTriggerCtrl">Ctrl/Cmd + Select</option>
+                <option value="direct" data-i18n="s2tTriggerDirect">Direct Translate</option>
+              </select>
+            </div>
           </div>
           
           <div class="feature-item" id="item-hoverTranslate" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; transition: transform 0.3s ease;">
@@ -185,6 +203,21 @@
               <span class="slider round"></span>
             </label>
           </div>
+        </div>
+
+        <div class="field" style="margin-top: 4px;">
+          <div class="field-label-with-info" style="justify-content: space-between; align-items: center;">
+            <label data-i18n="showReaderCapsule">Floating Reader Capsule</label>
+            <label class="switch">
+              <input type="checkbox" id="showReaderCapsuleSwitch" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top: 4px;">
+          <label data-i18n="excludedDomains">Excluded Domains (One per line)</label>
+          <textarea id="excludedDomains" rows="2" style="width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #ccc; font-family: inherit; font-size: 11px; resize: vertical;" placeholder="e.g. github.com, localhost"></textarea>
         </div>
       </div>
 

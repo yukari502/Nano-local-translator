@@ -21,6 +21,9 @@ const I18N = {
     sourceLang: "Source Language", targetLang: "Target Language", displayMode: "Display Mode",
     translateOnly: "Translate Only", bilingual: "Bilingual",
     translateBtn: "Translate Page", restoreBtn: "Restore Original",
+    translatingBtn: "Translating...", reTranslateBtn: "Re-translate", statusTranslating: "Translating...", statusActive: "Active (Scroll to translate)", statusReady: "Ready",
+    s2tTrigger: "Trigger Mode", s2tTriggerBubble: "Show Bubble", s2tTriggerAlt: "Alt + Select", s2tTriggerCtrl: "Ctrl/Cmd + Select", s2tTriggerDirect: "Direct Translate",
+    showReaderCapsule: "Floating Reader Capsule", excludedDomains: "Excluded Domains (One per line)", modelDownloading: "Downloading Model",
     pageStatus: "Page status:", translatedNodes: "Translated:",
     uiLang: "UI Language", saveSettings: "Save Settings",
     supportDev: "If you find this project helpful, you can Buy Me a Coffee.", buyCoffee: "Buy me a coffee ☕",
@@ -78,6 +81,9 @@ const I18N = {
     sourceLang: "源语言", targetLang: "目标语言", displayMode: "显示模式",
     translateOnly: "仅翻译", bilingual: "双语对照",
     translateBtn: "翻译页面", restoreBtn: "恢复原文",
+    translatingBtn: "翻译中...", reTranslateBtn: "重新翻译", statusTranslating: "翻译中...", statusActive: "活动中 (滚动自动翻译)", statusReady: "就绪",
+    s2tTrigger: "触发方式", s2tTriggerBubble: "显示小球", s2tTriggerAlt: "按住 Alt 选词", s2tTriggerCtrl: "按住 Ctrl/Cmd 选词", s2tTriggerDirect: "直接划词翻译",
+    showReaderCapsule: "页面悬浮阅读胶囊", excludedDomains: "排除域名（免翻列表，每行一个）", modelDownloading: "正在下载翻译模型",
     pageStatus: "页面状态:", translatedNodes: "已翻译:",
     uiLang: "界面语言", saveSettings: "保存设置",
     supportDev: "如果你觉得这个项目有帮助，可以请我喝杯咖啡。", buyCoffee: "请我喝杯咖啡 ☕",
@@ -135,6 +141,9 @@ const I18N = {
     sourceLang: "來源語言", targetLang: "目標語言", displayMode: "顯示模式",
     translateOnly: "僅翻譯", bilingual: "雙語對照",
     translateBtn: "翻譯頁面", restoreBtn: "恢復原文",
+    translatingBtn: "翻譯中...", reTranslateBtn: "重新翻譯", statusTranslating: "翻譯中...", statusActive: "活動中 (滾動自動翻譯)", statusReady: "就緒",
+    s2tTrigger: "觸發方式", s2tTriggerBubble: "顯示小球", s2tTriggerAlt: "按住 Alt 選詞", s2tTriggerCtrl: "按住 Ctrl/Cmd 選詞", s2tTriggerDirect: "直接劃詞翻譯",
+    showReaderCapsule: "頁面懸浮閱讀膠囊", excludedDomains: "排除域名（免翻列表，每行一個）", modelDownloading: "正在下載翻譯模型",
     pageStatus: "頁面狀態:", translatedNodes: "已翻譯:",
     uiLang: "介面語言", saveSettings: "保存設置",
     supportDev: "如果您覺得這個專案有幫助，可以請我喝杯咖啡。", buyCoffee: "請我喝杯咖啡 ☕",
@@ -192,6 +201,9 @@ const I18N = {
     sourceLang: "翻訳元", targetLang: "翻訳先", displayMode: "表示モード",
     translateOnly: "翻訳のみ", bilingual: "2言語表示",
     translateBtn: "ページを翻訳", restoreBtn: "原文に戻す",
+    translatingBtn: "翻訳中...", reTranslateBtn: "再翻訳", statusTranslating: "翻訳中...", statusActive: "有効 (スクロールで自動翻訳)", statusReady: "準備完了",
+    s2tTrigger: "トリガー方式", s2tTriggerBubble: "バブル表示", s2tTriggerAlt: "Alt 押しながら選択", s2tTriggerCtrl: "Ctrl/Cmd 押しながら選択", s2tTriggerDirect: "即時選択翻訳",
+    showReaderCapsule: "フローティング読書カプセル", excludedDomains: "除外ドメイン（1行に1つ）", modelDownloading: "モデルダウンロード中",
     pageStatus: "ステータス:", translatedNodes: "翻訳済み:",
     uiLang: "UI言語", saveSettings: "設定を保存",
     supportDev: "このプロジェクトが役立ったら、コーヒーをご馳走してください。", buyCoffee: "コーヒーを奢る ☕",
@@ -247,6 +259,7 @@ const I18N = {
     sourceLang: "Idioma de origen", targetLang: "Idioma de destino", displayMode: "Modo de visualización",
     translateOnly: "Solo traducir", bilingual: "Bilingüe",
     translateBtn: "Traducir página", restoreBtn: "Restaurar original",
+    translatingBtn: "Traduciendo...", reTranslateBtn: "Volver a traducir", statusTranslating: "Traduciendo...", statusActive: "Activo (Desplaza para traducir)", statusReady: "Listo",
     pageStatus: "Estado:", translatedNodes: "Traducidos:",
     uiLang: "Idioma de UI", saveSettings: "Guardar",
     supportDev: "Si encuentras útil este proyecto, invítame a un café.", buyCoffee: "Invítame un café ☕",
@@ -278,6 +291,7 @@ const I18N = {
     sourceLang: "Langue source", targetLang: "Langue cible", displayMode: "Mode d'affichage",
     translateOnly: "Traduire uniquement", bilingual: "Bilingue",
     translateBtn: "Traduire la page", restoreBtn: "Restaurer l'original",
+    translatingBtn: "Traduction...", reTranslateBtn: "Retraduire", statusTranslating: "Traduction...", statusActive: "Actif (Faites défiler pour traduire)", statusReady: "Prêt",
     pageStatus: "Statut :", translatedNodes: "Traduits :",
     uiLang: "Langue de l'interface", saveSettings: "Enregistrer",
     supportDev: "Si ce projet vous est utile, offrez-moi un café.", buyCoffee: "Offrez-moi un café ☕",
@@ -309,6 +323,7 @@ const I18N = {
     sourceLang: "Ausgangssprache", targetLang: "Zielsprache", displayMode: "Anzeigemodus",
     translateOnly: "Nur übersetzen", bilingual: "Zweisprachig",
     translateBtn: "Seite übersetzen", restoreBtn: "Original wiederherstellen",
+    translatingBtn: "Übersetzen...", reTranslateBtn: "Erneut übersetzen", statusTranslating: "Wird übersetzt...", statusActive: "Aktiv (Scrollen zum Übersetzen)", statusReady: "Bereit",
     pageStatus: "Status:", translatedNodes: "Übersetzt:",
     uiLang: "UI-Sprache", saveSettings: "Speichern",
     supportDev: "Wenn dieses Projekt hilfreich ist, spendiere mir einen Kaffee.", buyCoffee: "Kaffee spendieren ☕",
@@ -340,6 +355,7 @@ const I18N = {
     sourceLang: "Исходный язык", targetLang: "Целевой язык", displayMode: "Режим отображения",
     translateOnly: "Только перевод", bilingual: "Двуязычный",
     translateBtn: "Перевести страницу", restoreBtn: "Восстановить оригинал",
+    translatingBtn: "Перевод...", reTranslateBtn: "Перевести снова", statusTranslating: "Переводится...", statusActive: "Активно (Прокрутите для перевода)", statusReady: "Готово",
     pageStatus: "Статус:", translatedNodes: "Переведено:",
     uiLang: "Язык интерфейса", saveSettings: "Сохранить",
     supportDev: "Если проект был полезен, купите мне кофе.", buyCoffee: "Купить мне кофе ☕",
@@ -371,6 +387,7 @@ const I18N = {
     sourceLang: "اللغة المصدر", targetLang: "اللغة الهدف", displayMode: "وضع العرض",
     translateOnly: "ترجمة فقط", bilingual: "ثنائي اللغة",
     translateBtn: "ترجمة الصفحة", restoreBtn: "استعادة الأصل",
+    translatingBtn: "جاري الترجمة...", reTranslateBtn: "إعادة الترجمة", statusTranslating: "جاري الترجمة...", statusActive: "نشط (مرر للترجمة)", statusReady: "جاهز",
     pageStatus: "الحالة:", translatedNodes: "المترجمة:",
     uiLang: "لغة الواجهة", saveSettings: "حفظ",
     supportDev: "إذا وجدت هذا المشروع مفيداً، يمكنك شراء قهوة لي.", buyCoffee: "اشترِ لي قهوة ☕",
@@ -435,6 +452,15 @@ const ytSubColor = $('ytSubColor');
 const ytSubOpacity = $('ytSubOpacity');
 const ytSubOpacityVal = $('ytSubOpacityVal');
 const ytSubPosition = $('ytSubPosition');
+
+// New UI Elements
+const swapLangBtn = $('swapLangBtn');
+const modelDownloadContainer = $('modelDownloadContainer');
+const modelProgressBar = $('modelProgressBar');
+const modelDownloadText = $('modelDownloadText');
+const s2tTriggerMode = $('s2tTriggerMode');
+const showReaderCapsuleSwitch = $('showReaderCapsuleSwitch');
+const excludedDomains = $('excludedDomains');
 
 // TTS elements
 const ttsVoiceSelect = $('ttsVoiceSelect');
@@ -564,7 +590,8 @@ async function init() {
     'isEnabled', 'uiLang', 'sourceLang', 'targetLang', 'mode', 
     's2tTranslate', 'hoverTranslate', 'youtubeDualSubs', 'ocrTranslate', 'ocrAutoClose', 'ocrAutoCloseTime', 'ocrFontColor', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition', 'useCache', 'totalTranslates', 'hideWelcome', 'selectToTranslate',
     'ttsVoice', 'ttsRate', 'ttsPitch', 'ttsVolume',
-    'translationEngine', 'customApiUrl', 'customModel', 'customApiKey', 'customConcurrency', 'customChunkSize', 'customPrompt', 'hideCustomModelWarning'
+    'translationEngine', 'customApiUrl', 'customModel', 'customApiKey', 'customConcurrency', 'customChunkSize', 'customPrompt', 'hideCustomModelWarning',
+    's2tTriggerMode', 'showReaderCapsule', 'excludedDomains'
   ]);
   
   if (saved.totalTranslates) {
@@ -669,6 +696,15 @@ async function init() {
     ttsVolumeVal.textContent = saved.ttsVolume;
   }
 
+  // Load new feature settings
+  if (s2tTriggerMode && saved.s2tTriggerMode) s2tTriggerMode.value = saved.s2tTriggerMode;
+  if (showReaderCapsuleSwitch && saved.showReaderCapsule !== undefined) {
+    showReaderCapsuleSwitch.checked = saved.showReaderCapsule;
+  }
+  if (excludedDomains && saved.excludedDomains !== undefined) {
+    excludedDomains.value = saved.excludedDomains;
+  }
+
   await refreshStatus();
 
   translateBtn.addEventListener('click', onTranslate);
@@ -706,6 +742,37 @@ async function init() {
     await chrome.storage.local.set({ s2tTranslate: val });
     setTimeout(() => sortFeatures(true), 500);
   });
+
+  if (swapLangBtn) {
+    swapLangBtn.addEventListener('click', () => {
+      const srcVal = sourceLang.value;
+      const tgtVal = targetLang.value;
+      if (srcVal === 'auto') return;
+      sourceLang.value = tgtVal;
+      targetLang.value = srcVal;
+      saveSettings();
+    });
+  }
+
+  if (s2tTriggerMode) {
+    s2tTriggerMode.addEventListener('change', async (e) => {
+      await chrome.storage.local.set({ s2tTriggerMode: e.target.value });
+    });
+  }
+
+  if (showReaderCapsuleSwitch) {
+    showReaderCapsuleSwitch.addEventListener('change', async (e) => {
+      await chrome.storage.local.set({ showReaderCapsule: e.target.checked });
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab) chrome.tabs.sendMessage(tab.id, { action: 'update_capsule_visibility', show: e.target.checked }).catch(() => {});
+    });
+  }
+
+  if (excludedDomains) {
+    excludedDomains.addEventListener('input', async (e) => {
+      await chrome.storage.local.set({ excludedDomains: e.target.value });
+    });
+  }
 
   hoverTranslateSwitch.addEventListener('change', async (e) => {
     const val = e.target.checked ? 'on' : 'off';
@@ -1001,7 +1068,10 @@ async function onSaveSettings() {
     customApiKey: customApiKey ? customApiKey.value : '',
     customConcurrency: customConcurrency ? parseInt(customConcurrency.value, 10) : 3,
     customChunkSize: customChunkSize ? parseInt(customChunkSize.value, 10) : 10,
-    customPrompt: customPrompt ? customPrompt.value : ''
+    customPrompt: customPrompt ? customPrompt.value : '',
+    s2tTriggerMode: s2tTriggerMode ? s2tTriggerMode.value : 'bubble',
+    showReaderCapsule: showReaderCapsuleSwitch ? showReaderCapsuleSwitch.checked : true,
+    excludedDomains: excludedDomains ? excludedDomains.value : ''
   });
   
   settingsStatusMsg.textContent = 'Settings saved!';
@@ -1104,41 +1174,101 @@ function saveSettings() {
   });
 }
 
+function getI18nText(key, fallback = '') {
+  const lang = (uiLangSelect && uiLangSelect.value) || 'en';
+  const dict = I18N[lang] || I18N['en'];
+  return (dict && dict[key]) || (I18N['en'] && I18N['en'][key]) || fallback;
+}
+
+function updateTranslationUI(state) {
+  if (!state) return;
+  if (state.count !== undefined) {
+    translatedCount.textContent = state.count;
+  }
+
+  if (state.isTranslating) {
+    translateBtn.disabled = true;
+    translateBtn.classList.add('loading');
+    translateBtn.textContent = getI18nText('translatingBtn', 'Translating...');
+    pageStatus.textContent = getI18nText('statusTranslating', 'Translating...');
+    restoreBtn.disabled = false;
+  } else if (state.isTranslated) {
+    translateBtn.disabled = false;
+    translateBtn.classList.remove('loading');
+    translateBtn.textContent = getI18nText('reTranslateBtn', 'Re-translate');
+    const src = state.sourceLang || sourceLang.value;
+    const tgt = state.targetLang || targetLang.value;
+    pageStatus.textContent = `${getI18nText('statusActive', 'Active')} (${src} → ${tgt})`;
+    restoreBtn.disabled = false;
+  } else {
+    translateBtn.disabled = false;
+    translateBtn.classList.remove('loading');
+    translateBtn.textContent = getI18nText('translateBtn', 'Translate Page');
+    pageStatus.textContent = getI18nText('statusReady', 'Ready');
+    restoreBtn.disabled = true;
+  }
+}
+
+// Listen for live page translation progress and status events
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.type === 'page_translation_status') {
+    updateTranslationUI(msg);
+  }
+  if (msg && msg.type === 'model_download_progress') {
+    if (modelDownloadContainer && modelProgressBar && modelDownloadText) {
+      modelDownloadContainer.style.display = 'block';
+      modelProgressBar.style.width = `${msg.percent || 0}%`;
+      const loadedMB = ((msg.loaded || 0) / (1024 * 1024)).toFixed(1);
+      const totalMB = ((msg.total || 0) / (1024 * 1024)).toFixed(1);
+      modelDownloadText.textContent = `${getI18nText('modelDownloading', 'Downloading Model')}... ${msg.percent}% (${loadedMB}MB / ${totalMB}MB)`;
+      if (msg.percent >= 100) {
+        setTimeout(() => {
+          modelDownloadContainer.style.display = 'none';
+        }, 2000);
+      }
+    }
+  }
+});
+
 // ── Translate ─────────────────────────────────────────
 
 async function onTranslate() {
   const src = sourceLang.value;
   const tgt = targetLang.value;
-  translateBtn.disabled = true;
-  translateBtn.classList.add('loading');
-  restoreBtn.disabled = true;
+  updateTranslationUI({
+    isTranslating: true,
+    isTranslated: true,
+    sourceLang: src,
+    targetLang: tgt
+  });
   hideStatus();
-  pageStatus.textContent = 'Translating...';
+
   try {
     const resp = await sendToTab({ action: 'translate', mode: currentMode, sourceLang: src, targetLang: tgt });
-    if (resp.status === 'done') {
+    if (resp && resp.status === 'done') {
       const statData = await chrome.storage.local.get(['totalTranslates']);
       const count = (statData.totalTranslates || 0) + 1;
       await chrome.storage.local.set({ totalTranslates: count });
       const el = $('totalTranslateCount');
       if (el) el.textContent = count;
 
-      showStatus('Translation complete: ' + resp.count + ' text nodes', 'success');
-      pageStatus.textContent = 'Translated (' + src + ' → ' + tgt + ')';
-      translatedCount.textContent = resp.count;
-      restoreBtn.disabled = false;
-      translateBtn.textContent = 'Re-translate';
+      updateTranslationUI({
+        isTranslated: true,
+        isTranslating: false,
+        count: resp.count,
+        sourceLang: src,
+        targetLang: tgt
+      });
+      showStatus(getI18nText('statusActive', 'Active Translation') + ': ' + resp.count + ' ' + (getI18nText('translatedNodes', 'nodes')), 'success');
     } else {
-      showStatus('Translation failed: ' + (resp.error || 'unknown error'), 'error');
+      showStatus('Translation failed: ' + (resp ? resp.error : 'unknown error'), 'error');
+      updateTranslationUI({ isTranslated: false, isTranslating: false });
       pageStatus.textContent = 'Error';
     }
   } catch (e) {
     showStatus('Cannot connect to page: ' + e.message, 'error');
+    updateTranslationUI({ isTranslated: false, isTranslating: false });
     pageStatus.textContent = 'Connection failed';
-    translateBtn.textContent = 'Translate Page';
-  } finally {
-    translateBtn.disabled = false;
-    translateBtn.classList.remove('loading');
   }
 }
 
@@ -1147,10 +1277,8 @@ async function onRestore() {
   hideStatus();
   try {
     await sendToTab({ action: 'restore' });
+    updateTranslationUI({ isTranslated: false, isTranslating: false, count: 0 });
     showStatus('Restored original text', 'success');
-    pageStatus.textContent = 'Ready';
-    translatedCount.textContent = '0';
-    translateBtn.textContent = 'Translate Page';
   } catch (e) {
     showStatus('Restore failed: ' + e.message, 'error');
     restoreBtn.disabled = false;
@@ -1160,11 +1288,8 @@ async function onRestore() {
 async function refreshStatus() {
   try {
     const resp = await sendToTab({ action: 'getStatus' });
-    if (resp.isTranslated) {
-      pageStatus.textContent = 'Translated';
-      translatedCount.textContent = resp.count;
-      restoreBtn.disabled = false;
-      translateBtn.textContent = 'Re-translate';
+    if (resp) {
+      updateTranslationUI(resp);
     }
   } catch (e) {}
 }
