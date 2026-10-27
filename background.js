@@ -1,55 +1,7 @@
-// Background Service Worker — 调用 Chrome Translator API 并缓存结果
+// Background Service Worker — 调用 Chrome Translator API
 
-const cache = new Map();
-const CACHE_MAX = 5000;
-let cacheSaveTimeout = null;
-
-// Load persistent cache from chrome.storage.local on startup
-(async () => {
-  try {
-    const data = await chrome.storage.local.get(['persistentTranslationCache']);
-    if (data.persistentTranslationCache && typeof data.persistentTranslationCache === 'object') {
-      for (const [key, val] of Object.entries(data.persistentTranslationCache)) {
-        cache.set(key, val);
-      }
-    }
-  } catch (e) {}
-})();
-
-function scheduleCachePersist() {
-  if (cacheSaveTimeout) return;
-  cacheSaveTimeout = setTimeout(async () => {
-    cacheSaveTimeout = null;
-    try {
-      // Retain top 2000 most recent items to stay within storage limits
-      const entries = Array.from(cache.entries()).slice(-2000);
-      const obj = Object.fromEntries(entries);
-      await chrome.storage.local.set({ persistentTranslationCache: obj });
-    } catch (e) {}
-  }, 2000);
-}
-
-function cacheKey(sourceLang, targetLang, text) {
-  return sourceLang + '\n' + targetLang + '\n' + text;
-}
-
-// LRU: delete then re-set to move to end
-function cacheGet(key) {
-  if (!cache.has(key)) return undefined;
-  const val = cache.get(key);
-  cache.delete(key);
-  cache.set(key, val);
-  return val;
-}
-
-function cacheSet(key, val) {
-  if (cache.size >= CACHE_MAX) {
-    const oldest = cache.keys().next().value;
-    cache.delete(oldest);
-  }
-  cache.set(key, val);
-  scheduleCachePersist();
-}
+// Clean up any legacy cache in storage
+chrome.storage.local.remove(['persistentTranslationCache', 'useCache']).catch(() => {});
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'translate') {
@@ -59,13 +11,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.error('handleTranslate error:', err);
         sendResponse({ translations: {}, error: err.message || String(err) });
       });
-    return true;
-  }
-  if (request.type === 'clearCache') {
-    cache.clear();
-    clearTranslatorPool();
-    chrome.storage.local.remove(['persistentTranslationCache']).catch(() => {});
-    sendResponse({ ok: true });
     return true;
   }
   if (request.type === 'checkApi') {
@@ -481,7 +426,6 @@ async function handleTranslate(request) {
   }
 
   const data = await chrome.storage.local.get([
-    'useCache',
     'translationEngine',
     'customApiUrl',
     'customApiKey',
@@ -490,7 +434,6 @@ async function handleTranslate(request) {
     'customChunkSize',
     'customPrompt'
   ]);
-  const useCache = data.useCache !== false; // true by default
   const engine = data.translationEngine || 'chrome';
 
   let actualSourceLang = sourceLang;
@@ -561,22 +504,7 @@ async function handleTranslate(request) {
     actualSourceLang = targetLang === 'en' ? 'zh' : 'en';
   }
 
-  const batch = [];
-
-  // Check cache
-  for (const text of texts) {
-    if (useCache) {
-      const key = cacheKey(actualSourceLang, targetLang, text);
-      const cached = cacheGet(key);
-      if (cached !== undefined) {
-        results[text] = cached;
-      } else {
-        batch.push(text);
-      }
-    } else {
-      batch.push(text);
-    }
-  }
+  const batch = texts;
 
   if (batch.length === 0) {
     return { translations: results };
@@ -603,10 +531,6 @@ async function handleTranslate(request) {
 
       for (const text of batch) {
         const translated = customTranslations[text] || text;
-        if (useCache && translated !== text) {
-          const key = cacheKey(actualSourceLang, targetLang, text);
-          cacheSet(key, translated);
-        }
         results[text] = translated;
       }
     } catch (err) {
@@ -669,10 +593,6 @@ async function handleTranslate(request) {
           }
         }
         const translated = await translator.translate(textToTranslate);
-        if (useCache && translated) {
-          const key = cacheKey(actualSourceLang, targetLang, text);
-          cacheSet(key, translated);
-        }
         results[text] = translated || text;
       } catch (e) {
         console.warn('Single text translation error:', e);
