@@ -43,9 +43,11 @@ You can find it at [Chrome Web Store](https://chromewebstore.google.com/detail/b
 
 - **📺 YouTube Dual Subtitles**:
   - Seamlessly injects dual bilingual subtitles with word-by-word progressive deduplication, custom font colors, opacity, and positioning.
+  - Sibling-line rendering architecture ensures translation never interferes with YouTube's live caption nodes or leaks newly arrived words.
 
 - **📷 Screenshot OCR Translate (Alt+S)**:
   - Select any region on screen to recognize text via on-device OCR and translate instantly.
+  - To keep the extension package ultra-lightweight (<200KB), OCR binaries are downloadable on demand (`npm run setup-ocr`).
 
 ---
 
@@ -63,6 +65,13 @@ You can find it at [Chrome Web Store](https://chromewebstore.google.com/detail/b
 3. Enable **Developer mode** in the top right corner.
 4. Click **Load unpacked** and select the extension directory.
 5. You can check the status of your local translation models by visiting `chrome://on-device-translation-internals`.
+6. *(Optional)* **Enable Screenshot OCR**:
+   - The repository is lightweight and does not bundle heavy OCR binaries (~4.8MB) by default.
+   - If you want to use Screenshot OCR (Alt+S), simply run:
+     ```bash
+     npm run setup-ocr
+     # or: node scripts/download_ocr_libs.js
+     ```
 
 ## Usage
 

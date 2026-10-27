@@ -41,5 +41,7 @@ yarn-error.log*
 Publish/
 Present/
 Temp/
-release/
+# OCR / Heavy binaries (download on demand via node scripts/download_ocr_libs.js)
+lib/
+lib/tesseract/
 lib/tesseract/*.gz
