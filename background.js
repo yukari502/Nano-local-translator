@@ -627,20 +627,32 @@ async function handleTranslate(request) {
 
   return await runBuiltinTranslationTask(async () => {
     let translator = null;
-    const poolKey = `${normalizeLangTag(actualSourceLang)}->${normalizeLangTag(targetLang)}`;
+    let intermediateTranslator = null;
+    const normSource = normalizeLangTag(actualSourceLang);
+    const normTarget = normalizeLangTag(targetLang);
+    const poolKey = `${normSource}->${normTarget}`;
+
     try {
-      translator = await getOrCreateBuiltinTranslator(actualSourceLang, targetLang);
+      translator = await getOrCreateBuiltinTranslator(normSource, normTarget);
     } catch (err) {
-      console.error('Failed to create Translator instance:', err);
-      if (normalizeLangTag(actualSourceLang) !== 'en' && normalizeLangTag(targetLang) !== 'en') {
+      // Direct cross-language pair not supported on-device (e.g. ja -> zh, de -> zh)
+      if (normSource !== 'en' && normTarget !== 'en') {
+        // Attempt two-stage pivot translation: (source -> en) and then (en -> target)
         try {
-          translator = await getOrCreateBuiltinTranslator('en', targetLang);
-        } catch (e2) {
-          translatorPool.delete(poolKey);
-          for (const text of batch) results[text] = text;
-          return { translations: results, error: err.message || String(err) };
+          intermediateTranslator = await getOrCreateBuiltinTranslator(normSource, 'en');
+          translator = await getOrCreateBuiltinTranslator('en', normTarget);
+        } catch (pivotErr) {
+          // If source -> en is also not available, fallback directly to en -> target
+          try {
+            translator = await getOrCreateBuiltinTranslator('en', normTarget);
+          } catch (e2) {
+            translatorPool.delete(poolKey);
+            for (const text of batch) results[text] = text;
+            return { translations: results, error: e2.message || String(e2) };
+          }
         }
       } else {
+        console.warn('Built-in translator unavailable for', poolKey, err?.message || err);
         translatorPool.delete(poolKey);
         for (const text of batch) results[text] = text;
         return { translations: results, error: err.message || String(err) };
@@ -649,7 +661,14 @@ async function handleTranslate(request) {
 
     for (const text of batch) {
       try {
-        const translated = await translator.translate(text);
+        let textToTranslate = text;
+        if (intermediateTranslator) {
+          const mid = await intermediateTranslator.translate(text);
+          if (mid && mid.trim()) {
+            textToTranslate = mid;
+          }
+        }
+        const translated = await translator.translate(textToTranslate);
         if (useCache && translated) {
           const key = cacheKey(actualSourceLang, targetLang, text);
           cacheSet(key, translated);
