@@ -10,7 +10,7 @@ You can find it at [Chrome Web Store](https://chromewebstore.google.com/detail/b
 
 ## ✨ Features & Highlights
 
-- **⚡ Viewport-First Active Streaming Translation (活动式流式翻译)**:
+- **⚡ Viewport-First Active Streaming Translation**:
   - Immediately translates visible content on your screen without waiting for the entire page to parse.
   - Dynamically streams translated sentences into the DOM in real-time.
   - Automatically translates newly visible content as you scroll downwards using `IntersectionObserver` & `MutationObserver`.
