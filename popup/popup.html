@@ -341,12 +341,12 @@
           <div class="field" style="flex-direction: row; justify-content: space-between; align-items: center;">
             <label data-i18n="ytSubColorMode">Color Mode</label>
             <select id="ytSubColorMode" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; width: 120px;">
+              <option value="inherit" data-i18n="ytSubColorInherit" selected>Original</option>
               <option value="custom" data-i18n="ytSubColorCustom">Custom</option>
-              <option value="inherit" data-i18n="ytSubColorInherit">Original</option>
             </select>
           </div>
           
-          <div class="field" id="ytSubColorField" style="flex-direction: row; justify-content: space-between; align-items: center;">
+          <div class="field" id="ytSubColorField" style="display: none; flex-direction: row; justify-content: space-between; align-items: center;">
             <label data-i18n="ytSubColor">Color</label>
             <input type="color" id="ytSubColor" value="#ffeb3b" style="width: 28px; height: 28px; padding: 0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
           </div>

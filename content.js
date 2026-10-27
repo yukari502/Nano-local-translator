@@ -1202,7 +1202,7 @@ initHoverTranslation();
 // ============================================
 let youtubeDualSubsEnabled = false;
 let ytSubConfig = {
-  colorMode: 'custom',
+  colorMode: 'inherit',
   color: '#ffeb3b',
   opacity: '1',
   position: 'below'

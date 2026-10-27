@@ -660,7 +660,7 @@ async function init() {
   // Call the sorting once on load (no animation)
   setTimeout(() => sortFeatures(false), 50);
   
-  if (saved.ytSubColorMode) ytSubColorMode.value = saved.ytSubColorMode;
+  ytSubColorMode.value = saved.ytSubColorMode || 'inherit';
   ytSubColorField.style.display = ytSubColorMode.value === 'inherit' ? 'none' : 'flex';
   if (saved.ytSubColor) ytSubColor.value = saved.ytSubColor;
   if (saved.ytSubOpacity) {
