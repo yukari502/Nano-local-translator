@@ -8,27 +8,27 @@ You can find it on [Chrome Web Store](https://chromewebstore.google.com/detail/b
 
 ---
 
-## ✨ Features & Highlights
+##  Features & Highlights
 
-- **⚡ Viewport-First Streaming Translation (Alt+T)**:
+- **Viewport-First Streaming Translation (Alt+T)**:
   - Immediately translates visible content on your screen without waiting for the entire page to parse.
   - Dynamically streams translations into the DOM in real-time as you scroll.
 
-- **🤖 Dual Translation Engine (Built-in AI & Custom LLMs)**:
+- **Dual Translation Engine (Built-in AI & Custom LLMs)**:
   - **Chrome Built-in AI (Gemini Nano)**: 100% local, zero-latency, private on-device translation with no API key needed.
   - **Custom OpenAI-Compatible Engine**: Connect local models (Ollama, LM Studio) or cloud endpoints with configurable concurrency.
 
-- **🎈 Floating Selection & Hover Translation**:
+- **Floating Selection & Hover Translation**:
   - Highlight text to trigger an elegant floating translation bubble or instant tooltip card with TTS voice pronunciation.
   - Customizable trigger shortcuts: Show Bubble, Alt + Select, Ctrl/Cmd + Select, or Direct Translate.
 
-- **📺 YouTube Bilingual Subtitles**:
+- **YouTube Bilingual Subtitles**:
   - Automatically renders dual bilingual subtitles for YouTube videos with customizable colors, opacity, and positioning.
 
-- **📷 Screenshot OCR Translate (Alt+S)**:
+- **Screenshot OCR Translate (Alt+S)**:
   - Select any region on screen to extract and translate text locally. OCR binaries are downloadable on demand (`npm run setup-ocr`).
 
-- **💊 Floating Reader Capsule**:
+- **Floating Reader Capsule**:
   - Minimal on-page capsule showing live translation status, with 1-click Single/Bilingual mode switching and instant restore.
 
 ---
