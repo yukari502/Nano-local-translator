@@ -81,16 +81,25 @@ Nano Local AI Translator (Bilingual Web Reader) is a lightweight, privacy-focuse
   - Content scripts evaluate `window.location.hostname` against the exclusion list.
   - If a domain matches, page translation, selection bubbles, hover lookups, and subtitle interception are completely bypassed.
 
-### 4.6 YouTube Dual Subtitles with Progressive Deduplication
-- **Caption Interception**:
+### 4.6 YouTube Dual Subtitles with Sibling Visual Line Architecture
+- **Caption Interception & Isolation**:
   - Uses `MutationObserver` on `.ytp-caption-window-container`.
+  - Instead of injecting `<br>` and `<span>` directly into `.ytp-caption-segment` (which breaks YouTube's streaming text nodes and causes newly spoken words to append inside the translation line), translations are rendered as independent sibling visual lines (`.caption-visual-line.ai-yt-sub-line`).
+  - Native YouTube caption nodes remain 100% untouched and original text never leaks into the translated line.
 - **Progressive Prefix Deduplication**:
   - Streaming YouTube subtitles often arrive word-by-word (e.g., "The weather" → "The weather is" → "The weather is great").
-  - `handleNewSubtitle` detects growing prefix sequences within a 150ms window, delaying batch processing until phrase boundaries settle and avoiding duplicate translations.
-- **Custom Styling**:
-  - Supports custom font color, opacity, and positioning (above or below original captions).
+  - `handleNewSubtitleLine` detects growing prefix sequences within a 120ms window, delaying batch processing until phrase boundaries settle and avoiding duplicate translations.
+- **Custom Styling & Positioning**:
+  - Supports custom font color, opacity, and positioning (above or below original captions) with dynamic hot-reloading when settings change.
 
-### 4.7 Dual Engine Architecture (Chrome Built-in vs. Custom LLM)
+### 4.7 Lightweight Distribution & On-Demand OCR Dependencies
+- **Ultra-Lightweight Core**:
+  - Heavy OCR binaries (Tesseract WASM & worker, ~4.8MB) are excluded from the git repository and extension package, shrinking the core extension to ~200KB.
+- **One-Command Setup**:
+  - Users who need Screenshot OCR (Alt+S) can download the required libraries on demand via `npm run setup-ocr` or `node scripts/download_ocr_libs.js`.
+  - The offscreen document and popup settings provide graceful status guidance if OCR binaries are not yet installed.
+
+### 4.8 Dual Engine Architecture (Chrome Built-in vs. Custom LLM)
 - **Chrome Built-in AI**: Zero configuration, 100% on-device Gemini Nano inference.
 - **Custom OpenAI-Compatible Engine**:
   - Targets local inference backends (Ollama, LM Studio) or OpenAI-compatible endpoints (`/v1/chat/completions`).

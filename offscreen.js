@@ -20,6 +20,10 @@ async function initTesseract(sourceLang) {
   };
   const tessLang = langMap[sourceLang] || 'eng';
 
+  if (typeof Tesseract === 'undefined' || !Tesseract.createWorker) {
+    throw new Error('OCR library not installed. Please run "node scripts/download_ocr_libs.js" to download OCR dependencies.');
+  }
+
   // If we already have a worker for this language, reuse it
   if (tesseractWorker && currentWorkerLang === tessLang) {
     return tesseractWorker;

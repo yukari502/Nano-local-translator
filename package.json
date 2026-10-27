@@ -1,0 +1,18 @@
+{
+  "name": "nano-local-translator",
+  "version": "1.3.0",
+  "description": "Chrome Built-in AI (Gemini Nano) & Custom LLM Translation Extension",
+  "scripts": {
+    "setup-ocr": "node scripts/download_ocr_libs.js",
+    "locales": "node scripts/generate_locales.js"
+  },
+  "keywords": [
+    "chrome-extension",
+    "translation",
+    "gemini-nano",
+    "built-in-ai",
+    "youtube-subtitles"
+  ],
+  "author": "",
+  "license": "GPL-3.0"
+}
