@@ -112,8 +112,7 @@ function injectStyles() {
   max-height: 200px;
   overflow-y: auto;
 }
-#ai-web-translator-tooltip .speak-btn,
-#ai-web-translator-tooltip .action-btn {
+#ai-web-translator-tooltip .speak-btn {
   float: left;
   margin-right: 8px;
   margin-top: 2px;
@@ -123,32 +122,9 @@ function injectStyles() {
   user-select: none;
   transition: opacity 0.2s, transform 0.15s;
 }
-#ai-web-translator-tooltip .speak-btn:hover,
-#ai-web-translator-tooltip .action-btn:hover {
+#ai-web-translator-tooltip .speak-btn:hover {
   opacity: 1;
   transform: scale(1.15);
-}
-
-/* Tooltip Toast */
-.ai-tooltip-toast {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  background: rgba(16, 185, 129, 0.95);
-  color: #fff;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-weight: 600;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 10;
-}
-.ai-tooltip-toast.show {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 /* Floating spherical translation bubble */
@@ -892,8 +868,6 @@ async function showSelectionTranslation(text, pageX, pageY) {
   tooltipResult.style.display = 'block';
   tooltipResult.textContent = 'Translating...';
   tooltipDiv.querySelector('#ai-web-translator-speak-res').style.display = 'none';
-  const copyBtn = tooltipDiv.querySelector('#ai-web-translator-copy-res');
-  if (copyBtn) copyBtn.style.display = 'none';
 
   let tx = pageX + 8;
   let ty = pageY + 10;
@@ -925,7 +899,6 @@ async function showSelectionTranslation(text, pageX, pageY) {
     if (response && response.translations && response.translations[text]) {
       tooltipResult.textContent = response.translations[text];
       tooltipDiv.querySelector('#ai-web-translator-speak-res').style.display = 'block';
-      if (copyBtn) copyBtn.style.display = 'block';
     } else {
       tooltipResult.textContent = 'Translation failed. Built-in AI may not be ready.';
     }
@@ -975,14 +948,12 @@ function createTooltip() {
       <span>Nano local translator</span>
       <span class="star">✧</span>
     </div>
-    <div id="ai-web-translator-toast" class="ai-tooltip-toast">Copied!</div>
     <div id="ai-web-translator-original-container" class="text-container">
       <span id="ai-web-translator-speak-orig" class="speak-btn" title="Speak Original">🔊</span>
       <span id="ai-web-translator-original"></span>
     </div>
     <div id="ai-web-translator-result-container" class="text-container">
       <span id="ai-web-translator-speak-res" class="speak-btn" title="Speak Translation" style="display:none;">🔊</span>
-      <span id="ai-web-translator-copy-res" class="action-btn" title="Copy Translation" style="display:none;">📋</span>
       <span id="ai-web-translator-result"></span>
     </div>
   `;
@@ -991,8 +962,6 @@ function createTooltip() {
   tooltipResult = tooltipDiv.querySelector('#ai-web-translator-result');
   const speakOrigBtn = tooltipDiv.querySelector('#ai-web-translator-speak-orig');
   const speakResBtn = tooltipDiv.querySelector('#ai-web-translator-speak-res');
-  const copyResBtn = tooltipDiv.querySelector('#ai-web-translator-copy-res');
-  const toastEl = tooltipDiv.querySelector('#ai-web-translator-toast');
 
   speakOrigBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1010,19 +979,6 @@ function createTooltip() {
       const text = tooltipResult.textContent;
       chrome.runtime.sendMessage({ type: 'speak', text: text, lang: lang }).catch(() => {});
     });
-  });
-
-  copyResBtn.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    const text = tooltipResult.textContent;
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      if (toastEl) {
-        toastEl.classList.add('show');
-        setTimeout(() => toastEl.classList.remove('show'), 1200);
-      }
-    } catch (err) {}
   });
 
   tooltipDiv.addEventListener('mouseup', (e) => e.stopPropagation());
@@ -1206,8 +1162,6 @@ function initHoverTranslation() {
       tooltipResult.style.display = 'block';
       tooltipResult.textContent = 'Translating...';
       tooltipDiv.querySelector('#ai-web-translator-speak-res').style.display = 'none';
-      const copyBtn = tooltipDiv.querySelector('#ai-web-translator-copy-res');
-      if (copyBtn) copyBtn.style.display = 'none';
       tooltip.style.display = 'block';
       
       tooltip.style.left = `${x + window.scrollX + 15}px`;
@@ -1227,7 +1181,6 @@ function initHoverTranslation() {
       if (resp && resp.translations && resp.translations[word]) {
         tooltipResult.textContent = resp.translations[word];
         tooltipDiv.querySelector('#ai-web-translator-speak-res').style.display = 'block';
-        if (copyBtn) copyBtn.style.display = 'block';
       } else {
         tooltipResult.textContent = 'Translation failed.';
       }
@@ -1259,7 +1212,6 @@ function initYoutubeObserver() {
   if (!window.location.hostname.includes('youtube.com')) return;
   
   let observer = null;
-  const translatedCache = new Map();
 
   function fixSegmentChildrenOrder(segment) {
     if (!segment || !segment.isConnected) return;
@@ -1387,11 +1339,6 @@ function initYoutubeObserver() {
     
     segment.setAttribute('data-translated-text', text);
 
-    if (translatedCache.has(text)) {
-      applySubtitleTranslation(segment, text, translatedCache.get(text));
-      return;
-    }
-
     // Prefix-matching deduplication: if words are arriving progressively in quick succession
     if (lastProcessedSubText && text.startsWith(lastProcessedSubText) && (text.length - lastProcessedSubText.length < 15)) {
       clearTimeout(subDebounceTimer);
@@ -1435,19 +1382,13 @@ function initYoutubeObserver() {
       });
 
       if (resp && resp.translations) {
-        for (const [text, translatedText] of Object.entries(resp.translations)) {
-          if (translatedText && translatedText !== text) {
-            translatedCache.set(text, translatedText);
+        segments.forEach(segment => {
+          const text = segment.getAttribute('data-translated-text');
+          if (text && resp.translations[text]) {
+            applySubtitleTranslation(segment, text, resp.translations[text]);
           }
-        }
+        });
       }
-
-      segments.forEach(segment => {
-        const text = segment.getAttribute('data-translated-text');
-        if (text && translatedCache.has(text)) {
-          applySubtitleTranslation(segment, text, translatedCache.get(text));
-        }
-      });
     } catch (e) {
       // Ignore
     }
@@ -1543,22 +1484,18 @@ function initYoutubeObserver() {
 
     if (changes.ytSubColorMode) {
       ytSubConfig.colorMode = changes.ytSubColorMode.newValue;
-      translatedCache.clear();
       updateExistingSubs();
     }
     if (changes.ytSubColor) {
       ytSubConfig.color = changes.ytSubColor.newValue;
-      translatedCache.clear();
       updateExistingSubs();
     }
     if (changes.ytSubOpacity) {
       ytSubConfig.opacity = changes.ytSubOpacity.newValue;
-      translatedCache.clear();
       updateExistingSubs();
     }
     if (changes.ytSubPosition) {
       ytSubConfig.position = changes.ytSubPosition.newValue;
-      translatedCache.clear();
       updateExistingSubs();
     }
   });

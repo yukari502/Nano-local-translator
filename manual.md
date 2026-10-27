@@ -11,13 +11,12 @@ Nano Local AI Translator (Bilingual Web Reader) is a lightweight, privacy-focuse
   - Chrome Built-in LanguageDetector API (`window.ai.languageDetector`)
   - Chrome Storage API (`chrome.storage.local`)
   - Chrome TTS & Offscreen API (`chrome.tts`, `chrome.offscreen`)
-  - Chrome Clipboard API (`navigator.clipboard`)
 
 ## 3. Project Structure
 ```text
 .
 ├── manifest.json       # Extension configuration file (permissions, shortcuts, content scripts)
-├── background.js       # Service Worker: API calls, persistent LRU caching, model download monitor, TTS
+├── background.js       # Service Worker: API calls, model download monitor, TTS
 ├── content.js          # Injected content script: DOM traversal, streaming translation, reader capsule, bubble UI
 ├── popup/
 │   ├── popup.html      # Popup UI structure (controls, settings, download progress)
@@ -54,9 +53,8 @@ Nano Local AI Translator (Bilingual Web Reader) is a lightweight, privacy-focuse
   - `alt`: Only triggers when the user holds the `Alt` key while selecting text.
   - `ctrl`: Only triggers when the user holds `Ctrl` (or `Cmd` on macOS) while selecting text.
   - `direct`: Bypasses the bubble and directly opens the tooltip translation card.
-- **Glassmorphic UI & 1-Click Copy**:
-  - The tooltip is built with `backdrop-filter: blur(16px)` and supports automated dark mode switching.
-  - Features an integrated copy button (`📋`) that uses `navigator.clipboard.writeText` and renders an animated transient confirmation Toast (`.ai-tooltip-toast`).
+- **Glassmorphic Tooltip UI**:
+  - The tooltip is built with `backdrop-filter: blur(16px)` and supports automated dark mode switching with text-to-speech (TTS) voice pronunciation.
 
 ### 4.3 On-Page Floating Reader Capsule (`#ai-reader-capsule`)
 - **Lifecycle & Insertion**:
@@ -66,10 +64,7 @@ Nano Local AI Translator (Bilingual Web Reader) is a lightweight, privacy-focuse
   - Embedded Mode Switcher: 1-click toggle between Single Translation (`translate-only`) and Bilingual Comparison (`bilingual`).
   - Instant Restore (`✕`): Immediately removes all bilingual spans/restores original text and disengages active observers.
 
-### 4.4 Persistent Offline Caching & Resource Management
-- **Cross-Restart Persistent Cache**:
-  - To prevent cache loss caused by MV3 Service Worker auto-termination (~30s idle), `background.js` synchronizes its in-memory LRU cache with `chrome.storage.local` (`persistentTranslationCache`) using a 2-second debounce.
-  - On startup, the service worker restores cached translations into memory instantly.
+### 4.4 Resource Management & Model Download Progress
 - **Offscreen Document Auto-Close**:
   - The offscreen document (used for TTS audio rendering) automatically terminates after 60 seconds of inactivity to conserve system memory and browser processes.
 - **Model Download Progress**:
@@ -111,18 +106,17 @@ Nano Local AI Translator (Bilingual Web Reader) is a lightweight, privacy-focuse
   - `chrome://flags/#translation-api` -> Enabled
   - `chrome://flags/#optimization-guide-on-device-model` -> Enabled BypassPrefRequirement
 - **Required Manifest Permissions**:
-  - `storage`: For configuration and persistent translation cache.
+  - `storage`: For configuration and user preferences.
   - `activeTab`: For content script communication and tab management.
   - `tts`: For text-to-speech pronunciation.
   - `offscreen`: For fallback audio playback.
-  - `clipboardWrite`: For 1-click translation copying.
 
 ## 6. Developer & Debugging Guide
 1. **Testing Translator API Availability**:
    Run `await window.ai.translator.capabilities()` or `await window.translation.canTranslate({sourceLanguage:'en', targetLanguage:'zh'})` in DevTools console.
 2. **Debugging Background Service Worker**:
-   Open `chrome://extensions/` and click the "service worker" link to view background logs and persistent cache status.
+   Open `chrome://extensions/` and click the "service worker" link to view background logs and translation events.
 3. **Debugging Content Scripts & Capsule**:
    Inspect active pages with DevTools (F12) to verify `elementsToObserve`, `pendingPageTranslations`, and DOM mutation events.
 4. **Monitoring Local Model Downloads**:
-   Visit `chrome://on-device-translation-internals` to monitor local component downloading, model status, and cache partitions.
+   Visit `chrome://on-device-translation-internals` to monitor local component downloading and model status.

@@ -8,8 +8,7 @@
     "storage",
     "activeTab",
     "tts",
-    "offscreen",
-    "clipboardWrite"
+    "offscreen"
   ],
   "host_permissions": [
     "<all_urls>"

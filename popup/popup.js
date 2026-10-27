@@ -34,8 +34,7 @@ const I18N = {
     youtubeSettingsTitle: "YouTube dual subs settings", ytSubColorMode: "Color Mode", ytSubColorCustom: "Custom", ytSubColorInherit: "Original", ytSubColor: "Custom Color", ytSubOpacity: "Opacity", ytSubPosition: "Position (Translation)", ytSubBelow: "Below Original", ytSubAbove: "Above Original",
     statusOff: "Off", statusOn: "On", shortcutSettings: "Shortcuts",
     fullPageShortcut: "Full Page Translation", editShortcuts: "Edit (Alt+T)",
-    translationSettings: "Translation Settings", cacheResults: "Cache Translation Results",
-    cacheTooltip: "Enabling cache can improve translation speed and reduce duplicate requests, but may result in translations not being the most up-to-date.",
+    translationSettings: "Translation Settings",
     pluginSettings: "Plugin Settings", uiLanguage: "UI Language",
     saveSettingsBtn: "Save Settings",
     openSourceNotice: "This is an open-source project.",
@@ -94,8 +93,7 @@ const I18N = {
     youtubeSettingsTitle: "YouTube 双语字幕设置", ytSubColorMode: "颜色模式", ytSubColorCustom: "自定义", ytSubColorInherit: "跟随原文", ytSubColor: "自定义颜色", ytSubOpacity: "透明度", ytSubPosition: "翻译位置", ytSubBelow: "在原文下方", ytSubAbove: "在原文上方",
     statusOff: "关闭", statusOn: "开启", shortcutSettings: "快捷键设置",
     fullPageShortcut: "全文翻译快捷键", editShortcuts: "编辑 (Alt+T)",
-    translationSettings: "翻译设置", cacheResults: "缓存翻译结果",
-    cacheTooltip: "开启缓存可以提高翻译速度，减少重复请求，但可能导致翻译结果不是最新的",
+    translationSettings: "翻译设置",
     pluginSettings: "常规设置", uiLanguage: "界面语言",
     saveSettingsBtn: "保存设置",
     openSourceNotice: "这是一个开源项目。",
@@ -154,8 +152,7 @@ const I18N = {
     youtubeSettingsTitle: "YouTube 雙語字幕設置", ytSubColorMode: "顏色模式", ytSubColorCustom: "自定義", ytSubColorInherit: "跟隨原文", ytSubColor: "自定義顏色", ytSubOpacity: "透明度", ytSubPosition: "翻譯位置", ytSubBelow: "在原文下方", ytSubAbove: "在原文上方",
     statusOff: "關閉", statusOn: "開啟", shortcutSettings: "快捷鍵設置",
     fullPageShortcut: "全文翻譯快捷鍵", editShortcuts: "編輯 (Alt+T)",
-    translationSettings: "翻譯設置", cacheResults: "緩存翻譯結果",
-    cacheTooltip: "開啟緩存可以提高翻譯速度，減少重複請求，但可能導致翻譯結果不是最新的",
+    translationSettings: "翻譯設置",
     pluginSettings: "常規設置", uiLanguage: "介面語言",
     saveSettingsBtn: "保存設置",
     openSourceNotice: "這是一個開源專案。",
@@ -212,8 +209,7 @@ const I18N = {
     s2tTranslate: "選択翻訳", s2tSpeak: "テキスト読み上げ (TTS)",
     statusOff: "オフ", statusOn: "オン", shortcutSettings: "ショートカット設定",
     fullPageShortcut: "ページ全体翻訳", editShortcuts: "編集 (Alt+T)",
-    translationSettings: "翻訳設定", cacheResults: "翻訳結果をキャッシュ",
-    cacheTooltip: "キャッシュを有効にすると翻訳速度が向上しますが、最新の翻訳結果でない場合があります。",
+    translationSettings: "翻訳設定",
     pluginSettings: "一般設定", uiLanguage: "UI言語",
     saveSettingsBtn: "設定を保存",
     openSourceNotice: "これはオープンソースプロジェクトです。",
@@ -270,8 +266,7 @@ const I18N = {
     youtubeSettingsTitle: "Ajustes de YouTube dual subs", ytSubColorMode: "Modo de color", ytSubColorCustom: "Personalizado", ytSubColorInherit: "Original", ytSubColor: "Color", ytSubOpacity: "Opacidad", ytSubPosition: "Posición", ytSubBelow: "Debajo", ytSubAbove: "Arriba",
     statusOff: "Apagado", statusOn: "Encendido", shortcutSettings: "Atajos",
     fullPageShortcut: "Traducción de página completa", editShortcuts: "Editar",
-    translationSettings: "Ajustes de traducción", cacheResults: "Caché de traducción",
-    cacheTooltip: "El caché mejora la velocidad, pero puede no estar actualizado.",
+    translationSettings: "Ajustes de traducción",
     pluginSettings: "Ajustes de extensión", uiLanguage: "Idioma de UI",
     saveSettingsBtn: "Guardar Ajustes",
     openSourceNotice: "Este es un proyecto de código abierto.",
@@ -302,8 +297,7 @@ const I18N = {
     youtubeSettingsTitle: "Paramètres YouTube dual subs", ytSubColorMode: "Mode couleur", ytSubColorCustom: "Personnalisé", ytSubColorInherit: "Original", ytSubColor: "Couleur", ytSubOpacity: "Opacité", ytSubPosition: "Position", ytSubBelow: "En dessous", ytSubAbove: "Au dessus",
     statusOff: "Désactivé", statusOn: "Activé", shortcutSettings: "Raccourcis",
     fullPageShortcut: "Traduction de page complète", editShortcuts: "Modifier",
-    translationSettings: "Paramètres de traduction", cacheResults: "Mise en cache",
-    cacheTooltip: "Le cache améliore la vitesse mais peut ne pas être à jour.",
+    translationSettings: "Paramètres de traduction",
     pluginSettings: "Paramètres de l'extension", uiLanguage: "Langue de l'interface",
     saveSettingsBtn: "Enregistrer",
     openSourceNotice: "Ceci est un projet open source.",
@@ -334,8 +328,7 @@ const I18N = {
     youtubeSettingsTitle: "YouTube dual subs Einstellungen", ytSubColorMode: "Farbmodus", ytSubColorCustom: "Benutzerdefiniert", ytSubColorInherit: "Original", ytSubColor: "Farbe", ytSubOpacity: "Deckkraft", ytSubPosition: "Position", ytSubBelow: "Unterhalb", ytSubAbove: "Oberhalb",
     statusOff: "Aus", statusOn: "Ein", shortcutSettings: "Verknüpfungen",
     fullPageShortcut: "Vollbildübersetzung", editShortcuts: "Bearbeiten",
-    translationSettings: "Übersetzungseinstellungen", cacheResults: "Übersetzungscache",
-    cacheTooltip: "Cache verbessert die Geschwindigkeit, ist aber möglicherweise nicht aktuell.",
+    translationSettings: "Übersetzungseinstellungen",
     pluginSettings: "Plugin-Einstellungen", uiLanguage: "UI-Sprache",
     saveSettingsBtn: "Einstellungen speichern",
     openSourceNotice: "Dies ist ein Open-Source-Projekt.",
@@ -366,8 +359,7 @@ const I18N = {
     youtubeSettingsTitle: "Настройки YouTube dual subs", ytSubColorMode: "Цветовой режим", ytSubColorCustom: "Пользовательский", ytSubColorInherit: "Оригинал", ytSubColor: "Цвет", ytSubOpacity: "Непрозрачность", ytSubPosition: "Позиция", ytSubBelow: "Ниже", ytSubAbove: "Выше",
     statusOff: "Выкл", statusOn: "Вкл", shortcutSettings: "Ярлыки",
     fullPageShortcut: "Перевод всей страницы", editShortcuts: "Изменить",
-    translationSettings: "Настройки перевода", cacheResults: "Кэшировать перевод",
-    cacheTooltip: "Кэш повышает скорость, но результаты могут быть не самыми свежими.",
+    translationSettings: "Настройки перевода",
     pluginSettings: "Настройки плагина", uiLanguage: "Язык интерфейса",
     saveSettingsBtn: "Сохранить настройки",
     openSourceNotice: "Это проект с открытым исходным кодом.",
@@ -396,8 +388,7 @@ const I18N = {
     s2tTranslate: "ترجمة", s2tSpeak: "القراءة بصوت عالٍ (TTS)",
     statusOff: "إيقاف", statusOn: "تشغيل", shortcutSettings: "اختصارات",
     fullPageShortcut: "ترجمة الصفحة كاملة", editShortcuts: "تعديل",
-    translationSettings: "إعدادات الترجمة", cacheResults: "ذاكرة التخزين المؤقت",
-    cacheTooltip: "يحسن التخزين المؤقت السرعة ولكنه قد لا يكون الأحدث.",
+    translationSettings: "إعدادات الترجمة",
     pluginSettings: "إعدادات الإضافة", uiLanguage: "لغة الواجهة",
     saveSettingsBtn: "حفظ الإعدادات",
     openSourceNotice: "هذا مشروع مفتوح المصدر.",
@@ -434,7 +425,6 @@ const translatedCount = $('translatedCount');
 
 const masterSwitch = $('masterSwitch');
 const uiLangSelect = $('uiLangSelect');
-const useCacheSwitch = $('useCacheSwitch');
 const saveSettingsBtn = $('saveSettingsBtn');
 const settingsStatusMsg = $('settingsStatusMsg');
 const backBtn = $('backBtn');
@@ -588,7 +578,7 @@ async function init() {
   await checkTranslatorApi();
   const saved = await chrome.storage.local.get([
     'isEnabled', 'uiLang', 'sourceLang', 'targetLang', 'mode', 
-    's2tTranslate', 'hoverTranslate', 'youtubeDualSubs', 'ocrTranslate', 'ocrAutoClose', 'ocrAutoCloseTime', 'ocrFontColor', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition', 'useCache', 'totalTranslates', 'hideWelcome', 'selectToTranslate',
+    's2tTranslate', 'hoverTranslate', 'youtubeDualSubs', 'ocrTranslate', 'ocrAutoClose', 'ocrAutoCloseTime', 'ocrFontColor', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition', 'totalTranslates', 'hideWelcome', 'selectToTranslate',
     'ttsVoice', 'ttsRate', 'ttsPitch', 'ttsVolume',
     'translationEngine', 'customApiUrl', 'customModel', 'customApiKey', 'customConcurrency', 'customChunkSize', 'customPrompt', 'hideCustomModelWarning',
     's2tTriggerMode', 'showReaderCapsule', 'excludedDomains'
@@ -678,8 +668,6 @@ async function init() {
     if (ytSubOpacityVal) ytSubOpacityVal.textContent = saved.ytSubOpacity;
   }
   if (saved.ytSubPosition) ytSubPosition.value = saved.ytSubPosition;
-
-  if (saved.useCache !== undefined) useCacheSwitch.checked = saved.useCache;
   
   // TTS Settings load
   if (saved.ttsVoice !== undefined) ttsVoiceSelect.value = saved.ttsVoice;
@@ -1057,7 +1045,6 @@ async function onSaveSettings() {
   saveSettingsBtn.disabled = true;
   await chrome.storage.local.set({
     uiLang: uiLangSelect.value,
-    useCache: useCacheSwitch.checked,
     ttsVoice: ttsVoiceSelect.value,
     ttsRate: parseFloat(ttsRate.value),
     ttsPitch: parseFloat(ttsPitch.value),
