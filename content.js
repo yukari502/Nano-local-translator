@@ -252,23 +252,18 @@ function injectStyles() {
 }
 
 /* YouTube Dual Subtitles */
-.ai-yt-sub-line {
+.ai-yt-sub-br {
   display: block !important;
-  text-align: center !important;
-  margin-top: 2px !important;
-  margin-bottom: 2px !important;
-  pointer-events: none !important;
+  content: "" !important;
+  line-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 .ai-yt-sub {
-  display: inline-block !important;
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
-  font-size: 0.9em !important;
-  line-height: 1.3 !important;
-  padding: 1px 4px !important;
-  border-radius: 2px !important;
+  display: inline !important;
+  font-size: 0.88em !important;
+  line-height: 1.25 !important;
   user-select: text !important;
-  pointer-events: auto !important;
 }
 
 /* Tooltip Dark Mode */
@@ -1265,29 +1260,37 @@ function initYoutubeObserver() {
   
   let observer = null;
   const translatedCache = new Map();
-  const lineSubMap = new WeakMap();
-  const trackedLines = new Set();
 
-  function getTargetLine(segment) {
-    if (!segment) return null;
-    return segment.closest('.caption-visual-line') || segment;
-  }
+  function fixSegmentChildrenOrder(segment) {
+    if (!segment || !segment.isConnected) return;
+    const br = segment.querySelector('.ai-yt-sub-br');
+    const sub = segment.querySelector('.ai-yt-sub');
+    if (!br || !sub) return;
 
-  function cleanupOrphanSubs() {
-    for (const line of trackedLines) {
-      if (!line.isConnected || !line.textContent.trim()) {
-        const sub = lineSubMap.get(line);
-        if (sub && sub.parentNode) {
-          sub.remove();
+    if (ytSubConfig.position === 'above') {
+      if (segment.firstChild !== sub) {
+        segment.insertBefore(br, segment.firstChild);
+        segment.insertBefore(sub, br);
+      }
+    } else {
+      let next = br.nextSibling;
+      while (next) {
+        const curr = next;
+        next = next.nextSibling;
+        if (curr !== sub) {
+          segment.insertBefore(curr, br);
         }
-        trackedLines.delete(line);
+      }
+      if (segment.lastChild !== sub) {
+        segment.appendChild(br);
+        segment.appendChild(sub);
       }
     }
   }
 
   function cleanupAllSubs() {
-    document.querySelectorAll('.ai-yt-sub-line').forEach(el => el.remove());
-    trackedLines.clear();
+    document.querySelectorAll('.ai-yt-sub-br').forEach(el => el.remove());
+    document.querySelectorAll('.ai-yt-sub').forEach(el => el.remove());
   }
 
   function startObserving() {
@@ -1300,43 +1303,44 @@ function initYoutubeObserver() {
         return;
       }
 
-      cleanupOrphanSubs();
-
-      const linesToProcess = new Set();
+      const segmentsToProcess = new Set();
       mutations.forEach(mutation => {
         let target = mutation.target;
-        if (target.nodeType === Node.ELEMENT_NODE && (target.classList.contains('ai-yt-sub-line') || target.classList.contains('ai-yt-sub'))) {
+        if (target.nodeType === Node.ELEMENT_NODE && (target.classList.contains('ai-yt-sub') || target.classList.contains('ai-yt-sub-br'))) {
           return;
         }
 
         if (target.classList && target.classList.contains('ytp-caption-segment')) {
-          const line = getTargetLine(target);
-          if (line) linesToProcess.add(line);
+          fixSegmentChildrenOrder(target);
+          segmentsToProcess.add(target);
         } else if (mutation.type === 'childList') {
           mutation.addedNodes.forEach(node => {
             if (node.nodeType === Node.ELEMENT_NODE) {
-              if (node.classList.contains('ai-yt-sub-line') || node.classList.contains('ai-yt-sub')) return;
+              if (node.classList.contains('ai-yt-sub') || node.classList.contains('ai-yt-sub-br')) return;
               if (node.classList.contains('ytp-caption-segment')) {
-                const line = getTargetLine(node);
-                if (line) linesToProcess.add(line);
+                fixSegmentChildrenOrder(node);
+                segmentsToProcess.add(node);
               }
               const segments = node.querySelectorAll('.ytp-caption-segment');
               segments.forEach(s => {
-                const line = getTargetLine(s);
-                if (line) linesToProcess.add(line);
+                fixSegmentChildrenOrder(s);
+                segmentsToProcess.add(s);
               });
+            } else if (node.nodeType === Node.TEXT_NODE && node.parentElement?.classList.contains('ytp-caption-segment')) {
+              fixSegmentChildrenOrder(node.parentElement);
+              segmentsToProcess.add(node.parentElement);
             }
           });
         } else if (mutation.type === 'characterData') {
           const parent = target.parentElement;
-          if (parent) {
-            const line = getTargetLine(parent);
-            if (line) linesToProcess.add(line);
+          if (parent && parent.classList.contains('ytp-caption-segment')) {
+            fixSegmentChildrenOrder(parent);
+            segmentsToProcess.add(parent);
           }
         }
       });
 
-      linesToProcess.forEach(handleNewSubtitleLine);
+      segmentsToProcess.forEach(handleNewSubtitle);
     });
 
     observer.observe(captionContainer, {
@@ -1352,7 +1356,7 @@ function initYoutubeObserver() {
     for (const child of node.childNodes) {
       if (child.nodeType === Node.TEXT_NODE) {
         text += child.textContent;
-      } else if (child.nodeType === Node.ELEMENT_NODE && !child.classList.contains('ai-yt-sub') && !child.classList.contains('ai-yt-sub-line') && !child.classList.contains('ai-yt-sub-br')) {
+      } else if (child.nodeType === Node.ELEMENT_NODE && !child.classList.contains('ai-yt-sub') && !child.classList.contains('ai-yt-sub-br')) {
         text += extractOriginalText(child);
       }
     }
@@ -1364,23 +1368,27 @@ function initYoutubeObserver() {
   let lastProcessedSubText = '';
   let subDebounceTimer = null;
 
-  async function handleNewSubtitleLine(line) {
+  async function handleNewSubtitle(segment) {
     if (isDomainExcluded()) return;
-    const text = extractOriginalText(line);
+    const text = extractOriginalText(segment);
     if (!text) {
-      const existingSub = lineSubMap.get(line);
-      if (existingSub && existingSub.parentNode) existingSub.remove();
+      const oldBr = segment.querySelector('.ai-yt-sub-br');
+      const oldSub = segment.querySelector('.ai-yt-sub');
+      if (oldBr) oldBr.remove();
+      if (oldSub) oldSub.remove();
       return;
     }
     
-    const currentTranslated = line.getAttribute('data-translated-text');
-    if (currentTranslated === text) return;
+    const currentTranslated = segment.getAttribute('data-translated-text');
+    if (currentTranslated === text) {
+      fixSegmentChildrenOrder(segment);
+      return;
+    }
     
-    line.setAttribute('data-translated-text', text);
-    trackedLines.add(line);
+    segment.setAttribute('data-translated-text', text);
 
     if (translatedCache.has(text)) {
-      applySubtitleTranslation(line, text, translatedCache.get(text));
+      applySubtitleTranslation(segment, text, translatedCache.get(text));
       return;
     }
 
@@ -1388,7 +1396,7 @@ function initYoutubeObserver() {
     if (lastProcessedSubText && text.startsWith(lastProcessedSubText) && (text.length - lastProcessedSubText.length < 15)) {
       clearTimeout(subDebounceTimer);
       subDebounceTimer = setTimeout(() => {
-        pendingTranslations.set(line, text);
+        pendingTranslations.set(segment, text);
         if (!translateTimeout) {
           translateTimeout = setTimeout(processPendingTranslations, 120);
         }
@@ -1398,7 +1406,7 @@ function initYoutubeObserver() {
     }
     lastProcessedSubText = text;
 
-    pendingTranslations.set(line, text);
+    pendingTranslations.set(segment, text);
     if (!translateTimeout) {
       translateTimeout = setTimeout(processPendingTranslations, 150);
     }
@@ -1408,7 +1416,7 @@ function initYoutubeObserver() {
     translateTimeout = null;
     if (pendingTranslations.size === 0) return;
 
-    const lines = Array.from(pendingTranslations.keys());
+    const segments = Array.from(pendingTranslations.keys());
     const texts = Array.from(new Set(pendingTranslations.values()));
     pendingTranslations.clear();
 
@@ -1434,10 +1442,10 @@ function initYoutubeObserver() {
         }
       }
 
-      lines.forEach(line => {
-        const text = line.getAttribute('data-translated-text');
+      segments.forEach(segment => {
+        const text = segment.getAttribute('data-translated-text');
         if (text && translatedCache.has(text)) {
-          applySubtitleTranslation(line, text, translatedCache.get(text));
+          applySubtitleTranslation(segment, text, translatedCache.get(text));
         }
       });
     } catch (e) {
@@ -1445,53 +1453,46 @@ function initYoutubeObserver() {
     }
   }
 
-  function applySubtitleTranslation(line, originalText, translatedText) {
-    if (!line.isConnected) return;
-    if (line.getAttribute('data-translated-text') !== originalText) return;
+  function applySubtitleTranslation(segment, originalText, translatedText) {
+    if (!segment.isConnected) return;
+    if (segment.getAttribute('data-translated-text') !== originalText) return;
     if (!translatedText || translatedText === originalText) {
-      const existing = lineSubMap.get(line);
-      if (existing) existing.remove();
+      const oldBr = segment.querySelector('.ai-yt-sub-br');
+      const oldSub = segment.querySelector('.ai-yt-sub');
+      if (oldBr) oldBr.remove();
+      if (oldSub) oldSub.remove();
       return;
     }
 
-    let subLine = lineSubMap.get(line);
-    let span;
-    if (!subLine || !subLine.isConnected) {
-      subLine = document.createElement('span');
-      subLine.className = 'caption-visual-line ai-yt-sub-line';
+    let br = segment.querySelector('.ai-yt-sub-br');
+    let sub = segment.querySelector('.ai-yt-sub');
 
-      span = document.createElement('span');
-      span.className = 'ytp-caption-segment ai-yt-sub';
-      subLine.appendChild(span);
-      lineSubMap.set(line, subLine);
-    } else {
-      span = subLine.querySelector('.ai-yt-sub');
-      if (!span) {
-        span = document.createElement('span');
-        span.className = 'ytp-caption-segment ai-yt-sub';
-        subLine.appendChild(span);
-      }
+    if (!sub) {
+      sub = document.createElement('span');
+      sub.className = 'ai-yt-sub';
+    }
+    if (!br) {
+      br = document.createElement('br');
+      br.className = 'ai-yt-sub-br';
     }
 
-    span.textContent = translatedText;
+    sub.textContent = translatedText;
     if (ytSubConfig.colorMode === 'inherit') {
-      span.style.color = '';
+      sub.style.color = '';
     } else {
-      span.style.color = ytSubConfig.color;
+      sub.style.color = ytSubConfig.color;
     }
-    span.style.opacity = ytSubConfig.opacity;
-    span.style.fontSize = '0.9em';
+    sub.style.opacity = ytSubConfig.opacity;
 
-    // Position subLine as sibling outside line
     if (ytSubConfig.position === 'above') {
-      if (line.previousElementSibling !== subLine) {
-        line.before(subLine);
-      }
+      segment.insertBefore(br, segment.firstChild);
+      segment.insertBefore(sub, br);
     } else {
-      if (line.nextElementSibling !== subLine) {
-        line.after(subLine);
-      }
+      segment.appendChild(br);
+      segment.appendChild(sub);
     }
+
+    fixSegmentChildrenOrder(segment);
   }
 
   chrome.storage.local.get(['youtubeDualSubs', 'ytSubColorMode', 'ytSubColor', 'ytSubOpacity', 'ytSubPosition'], (res) => {
@@ -1516,28 +1517,28 @@ function initYoutubeObserver() {
       }
     }
     const updateExistingSubs = () => {
-      document.querySelectorAll('.ai-yt-sub-line').forEach(subLine => {
-        const span = subLine.querySelector('.ai-yt-sub');
-        if (span) {
+      document.querySelectorAll('.ytp-caption-segment').forEach(segment => {
+        const sub = segment.querySelector('.ai-yt-sub');
+        const br = segment.querySelector('.ai-yt-sub-br');
+        if (sub) {
           if (ytSubConfig.colorMode === 'inherit') {
-            span.style.color = '';
+            sub.style.color = '';
           } else {
-            span.style.color = ytSubConfig.color;
+            sub.style.color = ytSubConfig.color;
           }
-          span.style.opacity = ytSubConfig.opacity;
+          sub.style.opacity = ytSubConfig.opacity;
+        }
+        if (sub && br) {
+          if (ytSubConfig.position === 'above') {
+            segment.insertBefore(br, segment.firstChild);
+            segment.insertBefore(sub, br);
+          } else {
+            segment.appendChild(br);
+            segment.appendChild(sub);
+          }
+          fixSegmentChildrenOrder(segment);
         }
       });
-      
-      for (const line of trackedLines) {
-        const subLine = lineSubMap.get(line);
-        if (line.isConnected && subLine && subLine.isConnected) {
-          if (ytSubConfig.position === 'above') {
-            if (line.previousElementSibling !== subLine) line.before(subLine);
-          } else {
-            if (line.nextElementSibling !== subLine) line.after(subLine);
-          }
-        }
-      }
     };
 
     if (changes.ytSubColorMode) {
